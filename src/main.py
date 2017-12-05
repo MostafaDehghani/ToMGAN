@@ -59,7 +59,7 @@ def setup_training(model, batcher):
                      summary_op=None,
                      save_summaries_secs=60, # save summaries for tensorboard every 60 secs
                      save_model_secs=60, # checkpoint every 60 secs
-                     global_step=model.global_step_G
+                     global_step=None
                      )
 
   summary_writer = sv.summary_writer
@@ -81,45 +81,24 @@ def run_training(model, batcher, sess_context_manager, summary_writer):
     if FLAGS.debug: # start the tensorflow debugger
       sess = tf_debug.LocalCLIDebugWrapperSession(sess)
       sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
-    train_step = 0
+    num_batch = 0
     while True: # repeats until interrupted
       batch = batcher.next_batch()
-      if train_step % FLAGS.logging_step == 0:
-        tf.logging.info('------ training step: ' + str(train_step) + ' ------')
+      if num_batch % FLAGS.logging_step == 0:
+        tf.logging.info('------ number of  batches: ' + str(num_batch) + ' ------')
         t0=time.time()
-        results = model.run_train_step(sess, batch)
+        model.run_train_step(sess, batch, summary_writer, logging = True)
         t1=time.time()
         tf.logging.info('seconds for training step: %.3f', t1-t0)
-
-        loss_D = results['loss_D']
-        tf.logging.info('loss_D: %f', loss_D)  # print the loss to screen
-
-        loss_G = results['loss_G']
-        tf.logging.info('loss_G: %f', loss_G) # print the loss to screen
-
-        if not np.isfinite(loss_G):
-          raise Exception("Loss_G is not finite. Stopping.")
-        if not np.isfinite(loss_D):
-          raise Exception("Loss_D is not finite. Stopping.")
-
-        # flush the summary writer every so often
-        summary_writer.flush()
-
         tf.logging.info("sampling from the generator")
-        sampling_result  = model.sample_generator(sess)
-        util.plot(sampling_result['g_sample'], train_step)
+        sampling_result = model.sample_generator(sess)
+        util.plot(sampling_result['g_sample'], num_batch)
 
       else:  # no logging
-        results = model.run_train_step(sess, batch)
+        model.run_train_step(sess, batch, summary_writer, logging = False)
 
-      # we will write these summaries to tensorboard using summary_writer
-      summaries = results['summaries']
-      train_step_G = results['global_step_G']
-      train_step_D = results['global_step_D']
-      summary_writer.add_summary(summaries, train_step_G)  # write the summaries
-      summary_writer.add_summary(summaries, train_step_D)  # write the summaries
 
-      train_step += 1
+      num_batch += 1
 
 
 
