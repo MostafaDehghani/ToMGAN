@@ -14,7 +14,7 @@ from generator import Generator
 FLAGS = tf.app.flags.FLAGS
 
 
-class TomGAN_model(object):
+class GAN_model(object):
   """"""
 
   def __init__(self, hps):

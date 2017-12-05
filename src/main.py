@@ -5,7 +5,7 @@ from collections import namedtuple
 import numpy as np
 import tensorflow as tf
 from batcher import Batcher
-from model_0 import TomGAN_model
+
 from tensorflow.python import debug as tf_debug
 
 import util
@@ -20,7 +20,7 @@ tf.app.flags.DEFINE_string('exp_name', 'main_experiment', 'Name for experiment. 
                                            'be saved in a directory with this'
                                            ' name, under log_root.')
 tf.app.flags.DEFINE_string('model', 'vanilla', 'must be one of '
-                                               'vanila/tomI/tomII')
+                                               'vanilla/ToM_cycle')
 tf.app.flags.DEFINE_integer('hidden_dim', 128, 'dimension of hidden states '
                                                'in discriminator and generator')
 tf.app.flags.DEFINE_integer('batch_size', 128, 'minibatch size')
@@ -127,7 +127,15 @@ def main(unused_argv):
 
   tf.set_random_seed(111) # a seed value for randomness
   print("creating model...")
-  model = TomGAN_model(hps)
+
+  if FLAGS.model == 'vanilla':
+    from model_vanilla import GAN_model
+  elif FLAGS.model == 'ToM_cycle':
+    from model_ToM_cycle import GAN_model
+  else:
+    raise ValueError("Model name does not exist!")
+
+  model = GAN_model(hps)
   setup_training(model, batcher)
 
 if __name__ == '__main__':
