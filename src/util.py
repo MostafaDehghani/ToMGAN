@@ -40,7 +40,7 @@ def plot(samples, train_step):
     ax.set_aspect('equal')
     plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
 
-  plots_path = os.path.join(FLAGS.log_root, FLAGS.exp_name, 'gen_samples')
+  plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
   if not os.path.exists(plots_path): os.makedirs(plots_path)
 
   plt.savefig(plots_path + '/{}.png'.format(str(train_step).zfill(3)),

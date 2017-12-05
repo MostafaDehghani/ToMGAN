@@ -1,21 +1,20 @@
-import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
-import numpy as np
-from model_0 import TomGAN_model
-from batcher import Batcher
 import os
-from collections import namedtuple
 import time
-import util
+from collections import namedtuple
 
-
+import numpy as np
+import tensorflow as tf
+from batcher import Batcher
+from model_0 import TomGAN_model
 from tensorflow.python import debug as tf_debug
+
+import util
 
 FLAGS = tf.app.flags.FLAGS
 
 # Where to save output
-tf.app.flags.DEFINE_string('log_root', './log_root', 'Root directory for all logging.')
-tf.app.flags.DEFINE_string('data_path', './data', 'Directory where the data '
+tf.app.flags.DEFINE_string('log_root', '../log_root', 'Root directory for all logging.')
+tf.app.flags.DEFINE_string('data_path', '../data', 'Directory where the data '
                                             'is going to be saved.')
 tf.app.flags.DEFINE_string('exp_name', 'main_experiment', 'Name for experiment. Logs will '
                                            'be saved in a directory with this'
@@ -25,10 +24,16 @@ tf.app.flags.DEFINE_string('model', 'vanilla', 'must be one of '
 tf.app.flags.DEFINE_integer('hidden_dim', 128, 'dimension of hidden states '
                                                'in discriminator and generator')
 tf.app.flags.DEFINE_integer('batch_size', 128, 'minibatch size')
+
+tf.app.flags.DEFINE_integer('dis_output_size', 1, 'size of the input for the '
+                                         'discriminator (1)')
+
 tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
                                          'discriminator (for mnist = 784)')
+
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                           'as the input for the generator')
+tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
 tf.app.flags.DEFINE_integer('logging_step', 1000, 'logging step')
 
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
@@ -54,7 +59,9 @@ def setup_training(model, batcher):
                      summary_op=None,
                      save_summaries_secs=60, # save summaries for tensorboard every 60 secs
                      save_model_secs=60, # checkpoint every 60 secs
-                     global_step=model.global_step)
+                     global_step=model.global_step_G
+                     )
+
   summary_writer = sv.summary_writer
   tf.logging.info("Preparing or waiting for session...")
   sess_context_manager = sv.prepare_or_wait_for_session(config=util.get_config())
@@ -95,23 +102,25 @@ def run_training(model, batcher, sess_context_manager, summary_writer):
         if not np.isfinite(loss_D):
           raise Exception("Loss_D is not finite. Stopping.")
 
-        # get the summaries and iteration number so we can write summaries to tensorboard
-        summaries = results['summaries'] # we will write these summaries to tensorboard using summary_writer
-        train_step = results['global_step']
-        summary_writer.add_summary(summaries, train_step) # write the summaries
         # flush the summary writer every so often
         summary_writer.flush()
 
         tf.logging.info("sampling from the generator")
         sampling_result  = model.sample_generator(sess)
-        util.plot(sampling_result['g_sample'],train_step)
+        util.plot(sampling_result['g_sample'], train_step)
 
       else:  # no logging
         results = model.run_train_step(sess, batch)
-        # we will write these summaries to tensorboard using summary_writer
-        summaries = results['summaries']
-        train_step = results['global_step']
-        summary_writer.add_summary(summaries, train_step)  # write the summaries
+
+      # we will write these summaries to tensorboard using summary_writer
+      summaries = results['summaries']
+      train_step_G = results['global_step_G']
+      train_step_D = results['global_step_D']
+      summary_writer.add_summary(summaries, train_step_G)  # write the summaries
+      summary_writer.add_summary(summaries, train_step_D)  # write the summaries
+
+      train_step += 1
+
 
 
 
@@ -127,7 +136,7 @@ def main(unused_argv):
     os.makedirs(FLAGS.log_root)
 
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
-  hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size']
+  hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size', 'dis_output_size', 'gen_output_size' ]
   hps_dict = {}
   for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list

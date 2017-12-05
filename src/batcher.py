@@ -13,3 +13,4 @@ class Batcher(object):
   def next_batch(self):
     batch, _ = self._mnist.train.next_batch(self._hps.batch_size)
     return batch
+

@@ -2,9 +2,14 @@
 for the vanilla GAN  model"""
 
 import time
-import lib
+#import lib
 import tensorflow as tf
 import numpy as np
+
+
+from discriminator import Discriminator
+from generator import Generator
+
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -16,38 +21,10 @@ class TomGAN_model(object):
     self._hps = hps
 
   def _build_GAN(self):
-    """Add the whole GAN  model to the graph."""
-    with tf.variable_scope('discriminator'):
-      D_W1 = tf.Variable(lib.xavier_init([self._hps.dis_input_size, self._hps.hidden_dim]))
-      D_b1 = tf.Variable(tf.zeros(shape=[self._hps.hidden_dim]))
 
-      D_W2 = tf.Variable(lib.xavier_init([self._hps.hidden_dim, 1]))
-      D_b2 = tf.Variable(tf.zeros(shape=[1]))
-      self._theta_D = [D_W1, D_W2, D_b1, D_b2]
-
-      def discriminator(x):
-        D_h1 = tf.nn.relu(tf.matmul(x, D_W1) + D_b1)
-        D_logit = tf.matmul(D_h1, D_W2) + D_b2
-        D_prob = tf.nn.sigmoid(D_logit)
-
-        return D_prob, D_logit
-
-    with tf.variable_scope('generator'):
-      G_W1 = tf.Variable(
-        lib.xavier_init([self._hps.gen_input_size, self._hps.hidden_dim]))
-      G_b1 = tf.Variable(tf.zeros(shape=[self._hps.hidden_dim]))
-
-      G_W2 = tf.Variable(lib.xavier_init([self._hps.hidden_dim,
-                                          self._hps.dis_input_size ]))
-      G_b2 = tf.Variable(tf.zeros(shape=[self._hps.dis_input_size]))
-      self._theta_G = [G_W1, G_W2, G_b1, G_b2]
-
-      def generator(z):
-        G_h1 = tf.nn.relu(tf.matmul(z, G_W1) + G_b1)
-        G_log_prob = tf.matmul(G_h1, G_W2) + G_b2
-        G_prob = tf.nn.sigmoid(G_log_prob)
-
-        return G_prob
+    self.initializer = tf.contrib.layers.xavier_initializer
+    self.discriminator = Discriminator(self._hps)
+    self.generator = Generator(self._hps)
 
     with tf.variable_scope('gan'):
 
@@ -58,9 +35,9 @@ class TomGAN_model(object):
       self._Z = tf.placeholder(dtype = tf.float32, name= 'Z',
         shape=[None,self._hps.gen_input_size ])
 
-      self.G_sample = generator(self._Z)
-      D_real, D_logit_real = discriminator(self._X)
-      D_fake, D_logit_fake = discriminator(self.G_sample)
+      self.G_sample = self.generator.generate(self._Z)
+      D_real, D_logit_real = self.discriminator.discriminate(self._X)
+      D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
 
 
     with tf.variable_scope('D_loss'):
@@ -91,13 +68,13 @@ class TomGAN_model(object):
 
     with tf.device("/gpu:0"):
       self._train_op_D = tf.train.AdamOptimizer().minimize(self._D_loss,
-                                                  global_step=self.global_step,
-                                                         var_list=self._theta_D)
+                                                  global_step=self.global_step_D,
+                                                         var_list=self.discriminator._theta_D)
       self._train_op_G = tf.train.AdamOptimizer().minimize(self._G_loss,
-                                                  global_step=self.global_step,
-                                                         var_list=self._theta_G)
+                                                  global_step=self.global_step_G,
+                                                         var_list=self.generator._theta_G)
 
-    # Alternative: Mode control over optimization hyperparameters
+    # Alternative: More control over optimization hyperparameters
     # # Take gradients of the trainable variables w.r.t. the loss function to minimize
     # gradients_D = tf.gradients(self._D_loss, self._theta_G,
     #                          aggregation_method=tf.AggregationMethod.EXPERIMENTAL_TREE)
@@ -133,7 +110,8 @@ class TomGAN_model(object):
     t0 = time.time()
     with tf.device("/gpu:0"):
       self._build_GAN()
-    self.global_step = tf.Variable(0, name='global_step', trainable=False)
+    self.global_step_D = tf.Variable(0, name='global_step_D', trainable=False)
+    self.global_step_G = tf.Variable(0, name='global_step_G', trainable=False)
     self._add_train_op()
     self._summaries = tf.summary.merge_all()
     t1 = time.time()
@@ -152,7 +130,7 @@ class TomGAN_model(object):
         'train_op': self._train_op_D,
         'summaries': self._summaries,
         'loss': self._D_loss,
-        'global_step': self.global_step,
+        'global_step_D': self.global_step_D,
     }
     results_D = sess.run(to_return_D, feed_dict_D)
 
@@ -163,7 +141,7 @@ class TomGAN_model(object):
         'train_op': self._train_op_G,
         'summaries': self._summaries,
         'loss': self._G_loss,
-        'global_step': self.global_step,
+        'global_step_G': self.global_step_G,
     }
 
     results_G = sess.run(to_return_G, feed_dict_G)
@@ -172,7 +150,8 @@ class TomGAN_model(object):
       'loss_D': results_D['loss'],
       'loss_G': results_G['loss'],
       'summaries': results_G['summaries'],
-      'global_step': results_G['global_step'],
+      'global_step_G': results_G['global_step_G'],
+      'global_step_D': results_D['global_step_D']
     }
 
     return to_return
