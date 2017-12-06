@@ -68,11 +68,11 @@ class GAN_model(object):
 
     with tf.device("/gpu:0"):
       self._train_op_D = tf.train.AdamOptimizer().minimize(self._D_loss,
-                                                  global_step=self.global_step_D,
-                                                         var_list=self.discriminator._theta_D)
+                                                           global_step=self.global_step_D,
+                                                           var_list=self.discriminator._theta)
       self._train_op_G = tf.train.AdamOptimizer().minimize(self._G_loss,
-                                                  global_step=self.global_step_G,
-                                                         var_list=self.generator._theta_G)
+                                                           global_step=self.global_step_G,
+                                                           var_list=self.generator._theta)
 
     # Alternative: More control over optimization hyperparameters
     # # Take gradients of the trainable variables w.r.t. the loss function to minimize

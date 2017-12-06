@@ -115,7 +115,8 @@ def main(unused_argv):
     os.makedirs(FLAGS.log_root)
 
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
-  hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size', 'dis_output_size', 'gen_output_size' ]
+  hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size',
+                 'dis_output_size', 'gen_output_size' ]
   hps_dict = {}
   for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list
