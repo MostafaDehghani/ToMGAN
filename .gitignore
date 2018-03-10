@@ -8,4 +8,5 @@ log_root/*
 .idea
 .ipynb_checkpoints
 .idea/*
+.idea
 .ipynb_checkpoints/*
