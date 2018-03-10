@@ -5,3 +5,7 @@ _pycache_
 .DS_Store
 log_root
 log_root/*
+.idea
+.ipynb_checkpoints
+.idea/*
+.ipynb_checkpoints/*
