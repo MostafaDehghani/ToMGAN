@@ -34,7 +34,7 @@ tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                                    'as the input for the generator')
 tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
-tf.app.flags.DEFINE_integer('logging_step', 1000, 'logging step')
+tf.app.flags.DEFINE_integer('logging_step', 10, 'logging step')
 tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
                             """number of examples for train""")
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
@@ -130,7 +130,7 @@ def main(unused_argv):
   print("creating model...")
 
   if FLAGS.model == 'vanilla':
-    from model_vanilla import GAN_model
+    from model_DCGAN_vanilla import GAN_model
   elif FLAGS.model == 'ToM_cycle':
     from model_ToM_cycle import GAN_model
   else:

@@ -6,7 +6,7 @@ class Generator(object):
     self._hps = hps
     self._scope = scope
     self.initializer = tf.contrib.layers.xavier_initializer
-    self.depths = depths + [3]
+    self.depths = depths + [1]
     self.s_size = s_size
     self._buid_generator_graph()
 

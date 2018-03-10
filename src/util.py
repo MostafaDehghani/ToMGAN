@@ -32,7 +32,7 @@ def load_ckpt(saver, sess, ckpt_dir="train"):
 
 def plot(samples, train_step):
   fig = plt.figure(figsize=(4, 5))
-  gs = gridspec.GridSpec(5, 5)
+  gs = gridspec.GridSpec(4, 5)
   gs.update(wspace=0.05, hspace=0.05)
 
   print(len(samples))
@@ -43,7 +43,7 @@ def plot(samples, train_step):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_aspect('equal')
-    plt.imshow(sample, cmap='Greys_r')
+    plt.imshow(sample.reshape(sample.shape[0],sample.shape[1]), cmap='Greys_r')
 
   plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
   if not os.path.exists(plots_path): os.makedirs(plots_path)

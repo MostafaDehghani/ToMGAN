@@ -6,7 +6,7 @@ class Discriminator(object):
     self._hps = hps
     self._scope = scope
     self.initializer = tf.contrib.layers.xavier_initializer()
-    self.depths = [3] + depths
+    self.depths = [1] + depths
     self._buid_discriminator_graph()
 
   def _buid_discriminator_graph(self):
