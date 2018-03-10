@@ -1,17 +1,19 @@
-
 """This file contains some utility functions"""
 
 import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
 FLAGS = tf.app.flags.FLAGS
+
 
 def get_config():
   """Returns config for tf.session"""
   config = tf.ConfigProto(allow_soft_placement=True)
-  config.gpu_options.allow_growth=True
+  config.gpu_options.allow_growth = True
   return config
+
 
 def load_ckpt(saver, sess, ckpt_dir="train"):
   """Load checkpoint from the ckpt_dir (if unspecified, this is train dir) and restore it to saver and sess, waiting 10 secs in the case of failure. Also returns checkpoint name."""
@@ -27,18 +29,21 @@ def load_ckpt(saver, sess, ckpt_dir="train"):
       tf.logging.info("Failed to load checkpoint from %s. "
                       "Sleeping for %i secs...", ckpt_dir, 10)
 
+
 def plot(samples, train_step):
-  fig = plt.figure(figsize=(4, 4))
-  gs = gridspec.GridSpec(4, 4)
+  fig = plt.figure(figsize=(4, 5))
+  gs = gridspec.GridSpec(5, 5)
   gs.update(wspace=0.05, hspace=0.05)
 
+  print(len(samples))
   for i, sample in enumerate(samples):
+    print(sample.shape)
     ax = plt.subplot(gs[i])
     plt.axis('off')
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_aspect('equal')
-    plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
+    plt.imshow(sample, cmap='Greys_r')
 
   plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
   if not os.path.exists(plots_path): os.makedirs(plots_path)
