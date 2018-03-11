@@ -2,9 +2,13 @@
 
 import tensorflow as tf
 import os
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
+
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -36,9 +40,7 @@ def plot(samples, train_step):
   gs = gridspec.GridSpec(4, 5)
   gs.update(wspace=0.05, hspace=0.05)
 
-  print(len(samples))
   for i, sample in enumerate(samples):
-    print(sample.shape)
     ax = plt.subplot(gs[i])
     plt.axis('off')
     ax.set_xticklabels([])

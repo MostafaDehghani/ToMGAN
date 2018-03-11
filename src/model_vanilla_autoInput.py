@@ -38,16 +38,6 @@ class GAN_model(object):
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     image.set_shape((mnist.IMAGE_PIXELS))
     image = tf.cast(image,tf.float32)
-    #height = tf.cast(features['height'], tf.int32)
-    #width = tf.cast(features['width'], tf.int32)
-    #depth = tf.cast(features['depth'], tf.int32)
-
-    #image = tf.reshape(image, shape=(height, width, depth))
-    #image = tf.image.encode_jpeg(image)
-    #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
-
-    #image = tf.image.resize_image_with_crop_or_pad(image, CROP_IMAGE_SIZE, CROP_IMAGE_SIZE)
-    #image = tf.image.random_flip_left_right(image)
 
     min_queue_examples = self._hps.batch_size * 2
     images = tf.train.shuffle_batch(
