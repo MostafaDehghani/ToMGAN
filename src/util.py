@@ -4,6 +4,7 @@ import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import numpy as np
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -43,7 +44,11 @@ def plot(samples, train_step):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_aspect('equal')
-    plt.imshow(sample.reshape(sample.shape[0],sample.shape[1]), cmap='Greys_r')
+    if len(sample.shape) > 1:
+      plt.imshow(sample.reshape(sample.shape[0],sample.shape[1]), cmap='Greys_r')
+    else:
+      height = int(np.sqrt(sample.shape[0]))
+      plt.imshow(sample.reshape(height, height), cmap='Greys_r')
 
   plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
   if not os.path.exists(plots_path): os.makedirs(plots_path)

@@ -28,12 +28,12 @@ tf.app.flags.DEFINE_integer('batch_size', 128, 'minibatch size')
 tf.app.flags.DEFINE_integer('dis_output_size', 1, 'size of the input for the '
                                                   'discriminator (1)')
 
-tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
+tf.app.flags.DEFINE_integer('dis_input_size', 4096, 'size of the input for the '
                                                    'discriminator (for mnist = 784)')
 
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                                    'as the input for the generator')
-tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
+tf.app.flags.DEFINE_integer('gen_output_size', 4096, 'size of the generator output vector')
 tf.app.flags.DEFINE_integer('logging_step', 10, 'logging step')
 tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
                             """number of examples for train""")
@@ -129,8 +129,10 @@ def main(unused_argv):
   tf.set_random_seed(111)  # a seed value for randomness
   print("creating model...")
 
-  if FLAGS.model == 'vanilla':
+  if FLAGS.model == 'vanilla_dc':
     from model_DCGAN_vanilla import GAN_model
+  elif FLAGS.model == 'vanilla':
+    from model_vanilla_autoInput import GAN_model
   elif FLAGS.model == 'ToM_cycle':
     from model_ToM_cycle import GAN_model
   else:
