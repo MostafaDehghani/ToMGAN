@@ -53,7 +53,7 @@ class GAN_model(object):
       min_after_dequeue=min_queue_examples)
     tf.summary.image('images', images)
 
-    return tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
+    return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
 
 
   def _build_GAN(self):
@@ -74,7 +74,8 @@ class GAN_model(object):
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
       # Generator
-      self.G_sample = self.generator.generate(self._Z_sample)
+      self.G_sample = self.generator.generate(self._Z)
+      self.G_sample_test = self.generator.generate(self._Z_sample)
 
       D_real, D_logit_real = self.discriminator.discriminate(self._X)
       D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
@@ -107,10 +108,16 @@ class GAN_model(object):
     """
 
     with tf.device("/gpu:0"):
-      self._train_op_D = tf.train.AdamOptimizer().minimize(self._D_loss,
+      tf.logging.info(self.discriminator._theta)
+      learning_rate_D = tf.train.exponential_decay(0.001, self.global_step_D,
+                                                 100000, 0.96, staircase=True)
+      learning_rate_G = tf.train.exponential_decay(0.001, self.global_step_G,
+                                                 100000, 0.96, staircase=True)
+      self._train_op_D = tf.train.AdamOptimizer(learning_rate_D).minimize(self._D_loss,
                                                            global_step=self.global_step_D,
                                                            var_list=self.discriminator._theta)
-      self._train_op_G = tf.train.AdamOptimizer().minimize(self._G_loss,
+      tf.logging.info(self.generator._theta)
+      self._train_op_G = tf.train.AdamOptimizer(learning_rate_G).minimize(self._G_loss,
                                                            global_step=self.global_step_G,
                                                            var_list=self.generator._theta)
 
@@ -169,8 +176,6 @@ class GAN_model(object):
     """Runs one training iteration. Returns a dictionary containing train op,
     summaries, loss, global_step"""
 
-    sample_Z = np.random.uniform(-1., 1., size=[self._hps.batch_size,
-                                                self._hps.gen_input_size])
     to_return_D = {
         'train_op': self._train_op_D,
         'summaries': self._summaries_D,
@@ -181,8 +186,7 @@ class GAN_model(object):
     }
     results_D = sess.run(to_return_D)
 
-    sample_Z = np.random.uniform(-1., 1., size=[self._hps.batch_size,
-                                                 self._hps.gen_input_size])
+
     to_return_G = {
         'train_op': self._train_op_G,
         'summaries': self._summaries_G,
@@ -192,7 +196,6 @@ class GAN_model(object):
         'global_step': self.global_step,
 
     }
-
     results_G = sess.run(to_return_G)
 
     # we will write these summaries to tensorboard using summary_writer
@@ -230,6 +233,6 @@ class GAN_model(object):
     """Runs generator to generate samples"""
 
     to_return = {
-        'g_sample': self.G_sample,
+        'g_sample': self.G_sample_test,
     }
     return sess.run(to_return)

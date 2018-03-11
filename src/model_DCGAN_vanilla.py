@@ -71,7 +71,8 @@ class GAN_model(object):
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
       # Generator
-      self.G_sample = self.generator.generate(self._Z_sample, reuse=False)
+      self.G_sample_test = self.generator.generate(self._Z_sample, reuse=False)
+      self.G_sample = self.generator.generate(self._Z, reuse=False)
 
       # Discriminator
       D_real, D_logit_real = self.discriminator.discriminate(self._X, reuse=False)
@@ -205,6 +206,6 @@ class GAN_model(object):
     """Runs generator to generate samples"""
 
     to_return = {
-      'g_sample': self.G_sample,
+      'g_sample': self.G_sample_test,
     }
     return sess.run(to_return)
