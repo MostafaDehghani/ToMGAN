@@ -6,6 +6,7 @@ import time
 import tensorflow as tf
 import numpy as np
 import os
+from tensorflow.examples.tutorials.mnist import mnist
 
 from discriminator import Discriminator
 from generator import Generator
@@ -29,16 +30,19 @@ class GAN_model(object):
     fqueue = tf.train.string_input_producer(files)
     reader = tf.TFRecordReader()
     _, value = reader.read(fqueue)
-    features = tf.parse_single_example(value, features={'image_raw': tf.FixedLenFeature([], tf.uint8),
+    features = tf.parse_single_example(value, features={
                                                         'height': tf.FixedLenFeature([], tf.int64),
                                                         'width': tf.FixedLenFeature([], tf.int64),
-                                                        'depth': tf.FixedLenFeature([], tf.int64)})
+                                                        'depth': tf.FixedLenFeature([], tf.int64),
+                                                        'image_raw': tf.FixedLenFeature([], tf.string)})
     image = tf.decode_raw(features['image_raw'], tf.uint8)
-    height = tf.cast(features['height'], tf.int32)
-    width = tf.cast(features['width'], tf.int32)
-    depth = tf.cast(features['depth'], tf.int32)
+    image.set_shape((mnist.IMAGE_PIXELS))
+    image = tf.cast(image,tf.float32)
+    #height = tf.cast(features['height'], tf.int32)
+    #width = tf.cast(features['width'], tf.int32)
+    #depth = tf.cast(features['depth'], tf.int32)
 
-    image = tf.reshape(image, shape=(height, width, None))
+    #image = tf.reshape(image, shape=(height, width, depth))
     #image = tf.image.encode_jpeg(image)
     #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
 
@@ -52,7 +56,6 @@ class GAN_model(object):
       capacity=min_queue_examples + 3 * batch_size,
       min_after_dequeue=min_queue_examples)
     tf.summary.image('images', images)
-
     return images
     #return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
 
@@ -66,7 +69,9 @@ class GAN_model(object):
     with tf.variable_scope('gan'):
       # discriminator input from real data
       image_input = self.inputs(self._hps.batch_size, self.s_size)
-      self._X = tf.contrib.layers.flatten(image_input)
+      tf.logging.info("image input")
+      tf.logging.info(image_input)
+      self._X = image_input #tf.contrib.layers.flatten(image_input)
 
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
