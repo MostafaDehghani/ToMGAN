@@ -37,12 +37,13 @@ class GAN_model(object):
     width = tf.cast(features['width'], tf.int32)
     depth = tf.cast(features['depth'], tf.int32)
 
-    image = tf.reshape(image, shape=(height, width, 1))
-    image = tf.image.encode_jpeg(image)
-    image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
+    image = tf.reshape(image, shape=(height, width, depth))
+    image.set_shape((height, width, depth))
+    #image = tf.image.encode_jpeg(image)
+    #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
 
-    image = tf.image.resize_image_with_crop_or_pad(image, CROP_IMAGE_SIZE, CROP_IMAGE_SIZE)
-    image = tf.image.random_flip_left_right(image)
+    #image = tf.image.resize_image_with_crop_or_pad(image, CROP_IMAGE_SIZE, CROP_IMAGE_SIZE)
+    #image = tf.image.random_flip_left_right(image)
 
     min_queue_examples = self._hps.batch_size * 2
     images = tf.train.shuffle_batch(
@@ -52,7 +53,7 @@ class GAN_model(object):
       min_after_dequeue=min_queue_examples)
     tf.summary.image('images', images)
 
-    return tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
+    return images #tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
 
   def _build_GAN(self):
 

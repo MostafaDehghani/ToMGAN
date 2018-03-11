@@ -50,6 +50,7 @@ def convert_to(data_set, name):
   cols = images.shape[2]
   depth = images.shape[3]
 
+  print(rows,cols,depth)
   filename = os.path.join(FLAGS.directory, name + '.tfrecords')
   print('Writing', filename)
   with tf.python_io.TFRecordWriter(filename) as writer:
@@ -67,7 +68,32 @@ def convert_to(data_set, name):
       writer.write(example.SerializeToString())
 
 
+def load_tfrecord(filename_queue):
+  reader = tf.TFRecordReader()
+  _, serialized = reader.read(filename_queue)
+  features = tf.parse_single_example(
+    serialized,
+    features={
+      'label': tf.FixedLenFeature([], tf.string),
+      'image': tf.FixedLenFeature([], tf.string)
+    }
+  )
+  record_image = tf.decode_raw(features['image'], tf.uint8)
+
+  image = tf.reshape(record_image, [500, 500, 1])
+  label = tf.cast(features['label'], tf.string)
+  min_after_dequeue = 10
+  batch_size = 1000
+  capacity = min_after_dequeue + 3 * batch_size
+  image_batch, label_batch = tf.train.shuffle_batch(
+    [image, label], batch_size=batch_size, capacity=capacity, min_after_dequeue=min_after_dequeue
+  )
+
+  return image_batch, label_batch
+
+
 def main(unused_argv):
+  """
   # Get the data.
   data_sets = mnist.read_data_sets(FLAGS.directory,
                                    dtype=tf.uint8,
@@ -78,6 +104,19 @@ def main(unused_argv):
   convert_to(data_sets.train, 'train')
   convert_to(data_sets.validation, 'validation')
   convert_to(data_sets.test, 'test')
+  """
+  filename_queue = tf.train.string_input_producer(['/tmp/data/validation.tfrecords'], num_epochs=1)
+  data = load_tfrecord(filename_queue)
+
+  with tf.Session() as sess:
+    print("running")
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+    sess.run(tf.global_variables_initializer())
+    Y = sess.run([data])
+    print(Y)
+    coord.request_stop()
+    coord.join(threads)
 
 
 if __name__ == '__main__':

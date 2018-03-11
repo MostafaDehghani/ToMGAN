@@ -4,8 +4,6 @@ from collections import namedtuple
 
 import numpy as np
 import tensorflow as tf
-from batcher import Batcher
-
 from tensorflow.python import debug as tf_debug
 
 import util
