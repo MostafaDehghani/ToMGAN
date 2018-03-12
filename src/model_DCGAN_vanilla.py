@@ -54,7 +54,7 @@ class GAN_model(object):
 
     tf.summary.image('images', images)
 
-    return tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
+    return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
 
   def _build_GAN(self):
 
