@@ -38,7 +38,7 @@ class GAN_model(object):
     depth = tf.cast(features['depth'], tf.int32)
 
     image = tf.reshape(image, shape=(28, 28, 1))
-    image = tf.cast(image, tf.float32)
+    image = tf.cast(image, tf.float32) * (2. / 255) - 1.
     #image = tf.image.encode_jpeg(image)
     #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
 

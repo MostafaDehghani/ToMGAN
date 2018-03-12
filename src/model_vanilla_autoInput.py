@@ -37,7 +37,7 @@ class GAN_model(object):
                                                         'image_raw': tf.FixedLenFeature([], tf.string)})
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     image.set_shape((mnist.IMAGE_PIXELS))
-    image = tf.cast(image,tf.float32)
+    image = tf.cast(image, tf.float32) * (2. / 255) - 1.
 
     min_queue_examples = self._hps.batch_size * 2
     images = tf.train.shuffle_batch(
