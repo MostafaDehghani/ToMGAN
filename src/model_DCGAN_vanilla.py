@@ -109,11 +109,16 @@ class GAN_model(object):
     """Sets self._train_op, the op to run for training.
     """
     with tf.device("/gpu:0"):
-      self._train_op_D = tf.train.AdamOptimizer().minimize(self._D_loss,
+      learning_rate_D = 0.0002 #tf.train.exponential_decay(0.0001, self.global_step_D,
+                        #                           100000, 0.96, staircase=True)
+      learning_rate_G = 0.0002 #tf.train.exponential_decay(0.0001, self.global_step_G,
+                        #                           100000, 0.96, staircase=True)
+      b = 0.5
+      self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=b).minimize(self._D_loss,
                                                            global_step=self.global_step_D,
                                                            var_list=self.discriminator._theta)
 
-      self._train_op_G = tf.train.AdamOptimizer().minimize(self._G_loss,
+      self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=b).minimize(self._G_loss,
                                                            global_step=self.global_step_G,
                                                            var_list=self.generator._theta)
 

@@ -22,21 +22,21 @@ class Generator(object):
       with tf.variable_scope('reshape'):
         outputs = tf.layers.dense(z, self.depths[0] * self.s_size * self.s_size)
         outputs = tf.reshape(outputs, [-1, self.s_size, self.s_size, self.depths[0]])
-        outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training),0.2, name='outputs')
+        outputs = tf.nn.relu(tf.layers.batch_normalization(outputs, training=training),name='outputs')
 
       # deconvolution (transpose of convolution) x 4
       with tf.variable_scope('deconv1'):
         outputs = tf.layers.conv2d_transpose(outputs, self.depths[1], [4, 4], strides=(2, 2),
                                              padding='SAME')
-        outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training), 0.2, name='outputs')
+        outputs = tf.nn.relu(tf.layers.batch_normalization(outputs, training=training), name='outputs')
       with tf.variable_scope('deconv2'):
         outputs = tf.layers.conv2d_transpose(outputs, self.depths[2], [4,4], strides=(2, 2),
                                              padding='SAME')
-        outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training),0.2, name='outputs')
+        outputs = tf.nn.relu(tf.layers.batch_normalization(outputs, training=training), name='outputs')
       with tf.variable_scope('deconv3'):
         outputs = tf.layers.conv2d_transpose(outputs, self.depths[3], [4, 4], strides=(2, 2),
                                              padding='SAME')
-        outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training),0.2, name='outputs')
+        outputs = tf.nn.relu(tf.layers.batch_normalization(outputs, training=training), name='outputs')
       with tf.variable_scope('deconv4'):
         outputs = tf.layers.conv2d_transpose(outputs, self.depths[4], [4, 4], strides=(2, 2),
                                              padding='SAME')
