@@ -11,8 +11,8 @@ from dc_discriminator import Discriminator
 from dc_generator import Generator
 
 
-INPUT_IMAGE_SIZE = 112
-CROP_IMAGE_SIZE = 96
+INPUT_IMAGE_SIZE = 28
+CROP_IMAGE_SIZE = 28
 
 
 class GAN_model(object):
@@ -37,8 +37,8 @@ class GAN_model(object):
     width = tf.cast(features['width'], tf.int32)
     depth = tf.cast(features['depth'], tf.int32)
 
-    image = tf.reshape(image, shape=(height, width, depth))
-    image.set_shape((height, width, depth))
+    image = tf.reshape(image, shape=(28, 28, 1))
+    image = tf.cast(image, tf.float32)
     #image = tf.image.encode_jpeg(image)
     #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
 
@@ -46,14 +46,15 @@ class GAN_model(object):
     #image = tf.image.random_flip_left_right(image)
 
     min_queue_examples = self._hps.batch_size * 2
-    images = tf.train.shuffle_batch(
-      [image],
+    images,heights,widths,depths = tf.train.shuffle_batch(
+      [image,height,width,depth],
       batch_size=batch_size,
       capacity=min_queue_examples + 3 * batch_size,
       min_after_dequeue=min_queue_examples)
+
     tf.summary.image('images', images)
 
-    return images #tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
+    return tf.subtract(tf.div(tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4]), 127.5), 1.0)
 
   def _build_GAN(self):
 
@@ -64,7 +65,7 @@ class GAN_model(object):
     with tf.variable_scope('gan'):
       # discriminator input from real data
       self._X = self.inputs(self._hps.batch_size, self.s_size)
-
+      tf.logging.info(self._X)
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
@@ -73,7 +74,9 @@ class GAN_model(object):
 
       # Generator
       self.G_sample_test = self.generator.generate(self._Z_sample, reuse=False)
-      self.G_sample = self.generator.generate(self._Z, reuse=False)
+      self.G_sample = self.generator.generate(self._Z)
+
+      tf.logging.info(self.G_sample)
 
       # Discriminator
       D_real, D_logit_real = self.discriminator.discriminate(self._X, reuse=False)

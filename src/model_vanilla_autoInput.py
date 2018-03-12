@@ -46,6 +46,7 @@ class GAN_model(object):
       capacity=min_queue_examples + 3 * batch_size,
       min_after_dequeue=min_queue_examples)
     tf.summary.image('images', images)
+
     return images
     #return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
 

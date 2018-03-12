@@ -74,22 +74,29 @@ def load_tfrecord(filename_queue):
   features = tf.parse_single_example(
     serialized,
     features={
-      'label': tf.FixedLenFeature([], tf.string),
-      'image': tf.FixedLenFeature([], tf.string)
+      'label': tf.FixedLenFeature([], tf.int64),
+      'height': tf.FixedLenFeature([], tf.int64),
+      'width': tf.FixedLenFeature([], tf.int64),
+      'depth': tf.FixedLenFeature([], tf.int64),
+      'image_raw': tf.FixedLenFeature([], tf.string)
+
     }
   )
-  record_image = tf.decode_raw(features['image'], tf.uint8)
+  record_image = tf.decode_raw(features['image_raw'], tf.uint8)
 
-  image = tf.reshape(record_image, [500, 500, 1])
-  label = tf.cast(features['label'], tf.string)
-  min_after_dequeue = 10
-  batch_size = 1000
+  image = tf.reshape(record_image, [28, 28, 1])
+  label = tf.cast(features['label'], tf.int64)
+  height = tf.cast(features['height'], tf.int64)
+  width = tf.cast(features['width'], tf.int64)
+  depth = tf.cast(features['depth'], tf.int64)
+  min_after_dequeue = 0
+  batch_size = 5
   capacity = min_after_dequeue + 3 * batch_size
-  image_batch, label_batch = tf.train.shuffle_batch(
-    [image, label], batch_size=batch_size, capacity=capacity, min_after_dequeue=min_after_dequeue
+  image_batch, label_batch,height_batch, width_batch, depth_batch = tf.train.shuffle_batch(
+    [image, label,height, width, depth], batch_size=batch_size, capacity=capacity, min_after_dequeue=min_after_dequeue
   )
 
-  return image_batch, label_batch
+  return image_batch, label_batch, height_batch, width_batch, depth_batch
 
 
 def main(unused_argv):
@@ -105,16 +112,16 @@ def main(unused_argv):
   convert_to(data_sets.validation, 'validation')
   convert_to(data_sets.test, 'test')
   """
-  filename_queue = tf.train.string_input_producer(['/tmp/data/validation.tfrecords'], num_epochs=1)
+  filename_queue = tf.train.string_input_producer(['../data/MNIST_data/test.tfrecords'])
   data = load_tfrecord(filename_queue)
+  coord = tf.train.Coordinator()
 
   with tf.Session() as sess:
     print("running")
-    coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
     sess.run(tf.global_variables_initializer())
-    Y = sess.run([data])
-    print(Y)
+    data = sess.run([data])
+    print(data[0])
     coord.request_stop()
     coord.join(threads)
 
