@@ -52,7 +52,11 @@ def plot(samples, train_step):
       height = int(np.sqrt(sample.shape[0]))
       plt.imshow(sample.reshape(height, height), cmap='Greys_r')
 
-  plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
+  try:
+    plots_path = os.path.join(FLAGS.log_root, 'gen_samples')
+  except:
+    plots_path = "../log_root"
+
   if not os.path.exists(plots_path): os.makedirs(plots_path)
 
   plt.savefig(plots_path + '/{}.png'.format(str(train_step).zfill(3)),

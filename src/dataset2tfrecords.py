@@ -23,12 +23,11 @@ import os
 import sys
 
 import tensorflow as tf
-
+import numpy as np
 from tensorflow.contrib.learn.python.learn.datasets import mnist
+from util import *
 
 FLAGS = None
-
-
 def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
@@ -83,6 +82,7 @@ def load_tfrecord(filename_queue):
     }
   )
   record_image = tf.decode_raw(features['image_raw'], tf.uint8)
+  record_image = tf.cast(record_image, tf.float32) * (2. / 255) - 1.
 
   image = tf.reshape(record_image, [28, 28, 1])
   label = tf.cast(features['label'], tf.int64)
@@ -121,7 +121,10 @@ def main(unused_argv):
     threads = tf.train.start_queue_runners(coord=coord)
     sess.run(tf.global_variables_initializer())
     data = sess.run([data])
-    print(data[0])
+    print("plotting:",data[0][0].shape)
+    print("min val:",np.min(data[0][0]))
+    print("max val:", np.max(data[0][0]))
+    plot(data[0][0],0)
     coord.request_stop()
     coord.join(threads)
 

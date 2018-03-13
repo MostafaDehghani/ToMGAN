@@ -7,13 +7,11 @@ import tensorflow as tf
 import numpy as np
 import os
 from tensorflow.examples.tutorials.mnist import mnist
-
+import time
 from discriminator import Discriminator
 from generator import Generator
 
 
-INPUT_IMAGE_SIZE = 112
-CROP_IMAGE_SIZE = 96
 
 
 class GAN_model(object):
@@ -22,6 +20,7 @@ class GAN_model(object):
   def __init__(self, hps, s_size=4):
     self._hps = hps
     self.s_size = s_size
+    #tf.set_random_seed(np.random.get_state())
 
 
   def inputs(self, batch_size, s_size):
@@ -37,7 +36,7 @@ class GAN_model(object):
                                                         'image_raw': tf.FixedLenFeature([], tf.string)})
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     image.set_shape((mnist.IMAGE_PIXELS))
-    image = tf.cast(image, tf.float32) * (2. / 255) - 1.
+    image = tf.cast(image, tf.float32) * (1 / 255)
 
     min_queue_examples = self._hps.batch_size * 2
     images = tf.train.shuffle_batch(
@@ -67,12 +66,12 @@ class GAN_model(object):
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
-      self._Z = tf.random_uniform([self._hps.batch_size, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
-      self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
+      self._Z = tf.placeholder(dtype="float32", name='Z',shape=[None,self._hps.gen_input_size])
+      #tf.random_uniform([self._hps.batch_size, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
+      #self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
       # Generator
       self.G_sample = self.generator.generate(self._Z)
-      self.G_sample_test = self.generator.generate(self._Z_sample)
 
       D_real, D_logit_real = self.discriminator.discriminate(self._X)
       D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
@@ -106,15 +105,17 @@ class GAN_model(object):
 
     with tf.device("/gpu:0"):
       tf.logging.info(self.discriminator._theta)
-      learning_rate_D = 0.0002 #tf.train.exponential_decay(0.001, self.global_step_D,
+      learning_rate_D = 0.0004 #tf.train.exponential_decay(0.001, self.global_step_D,
       #                                           100000, 0.96, staircase=True)
-      learning_rate_G = 0.0002 # tf.train.exponential_decay(0.001, self.global_step_G,
+      learning_rate_G = 0.0004 # tf.train.exponential_decay(0.001, self.global_step_G,
       #                                           100000, 0.96, staircase=True)
-      self._train_op_D = tf.train.AdamOptimizer(learning_rate_D, beta1=0.5).minimize(self._D_loss,
+      #learning_rate_D,beta1=0.5
+      self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=0.5).minimize(self._D_loss,
                                                            global_step=self.global_step_D,
                                                            var_list=self.discriminator._theta)
       tf.logging.info(self.generator._theta)
-      self._train_op_G = tf.train.AdamOptimizer(learning_rate_G, beta1=0.5).minimize(self._G_loss,
+      #learning_rate_G,beta1=0.5
+      self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=0.5).minimize(self._G_loss,
                                                            global_step=self.global_step_G,
                                                            var_list=self.generator._theta)
 
@@ -172,6 +173,7 @@ class GAN_model(object):
   def run_train_step(self, sess, summary_writer, logging = False):
     """Runs one training iteration. Returns a dictionary containing train op,
     summaries, loss, global_step"""
+    feed_dict ={self._Z: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
 
     to_return_D = {
         'train_op': self._train_op_D,
@@ -181,7 +183,7 @@ class GAN_model(object):
         'global_step_D': self.global_step_D,
         'global_step': self.global_step,
     }
-    results_D = sess.run(to_return_D)
+    results_D = sess.run(to_return_D,feed_dict=feed_dict)
 
 
     to_return_G = {
@@ -193,7 +195,7 @@ class GAN_model(object):
         'global_step': self.global_step,
 
     }
-    results_G = sess.run(to_return_G)
+    results_G = sess.run(to_return_G,feed_dict=feed_dict)
 
     # we will write these summaries to tensorboard using summary_writer
     summaries_G = results_G['summaries']
@@ -230,6 +232,7 @@ class GAN_model(object):
     """Runs generator to generate samples"""
 
     to_return = {
-        'g_sample': self.G_sample_test,
+        'g_sample': self.G_sample,
     }
-    return sess.run(to_return)
+    feed_dic ={self._Z: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
+    return sess.run(to_return,feed_dic)
