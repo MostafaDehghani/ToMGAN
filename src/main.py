@@ -21,7 +21,7 @@ tf.app.flags.DEFINE_string('model', 'vanilla', 'must be one of '
                                                'vanilla/ToM_cycle')
 tf.app.flags.DEFINE_integer('hidden_dim', 128, 'dimension of hidden states '
                                                'in discriminator and generator')
-tf.app.flags.DEFINE_integer('batch_size', 128, 'minibatch size')
+tf.app.flags.DEFINE_integer('batch_size', 64, 'minibatch size')
 
 tf.app.flags.DEFINE_integer('dis_output_size', 1, 'size of the input for the '
                                                   'discriminator (1)')
