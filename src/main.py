@@ -132,7 +132,7 @@ def main(unused_argv):
   elif FLAGS.model == 'vanilla':
     from model_vanilla_autoInput import GAN_model
   elif FLAGS.model == 'ToM_cycle':
-    from model_ToM_cycle import GAN_model
+    from model_ToM_cycle_while import GAN_model
   else:
     raise ValueError("Model name does not exist!")
 

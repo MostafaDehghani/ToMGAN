@@ -59,8 +59,12 @@ class GAN_model(object):
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
-      self._Z = tf.random_uniform([self._hps.batch_size, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
-      self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
+      self._Z = tf.placeholder(dtype=tf.float32, name='Z',
+                               shape=[None, self._hps.gen_input_size])
+      self._Z_sample = tf.placeholder(dtype=tf.float32, name='Z',
+                               shape=[None, self._hps.gen_input_size])
+
+
 
       self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner')
       self.discriminator = Discriminator(self._hps)
@@ -68,6 +72,7 @@ class GAN_model(object):
 
       # Generator
       self.G_sample = self.generator.generate(self._Z)
+      self.G_sample_test = self.generator.generate(self._Z_sample)
 
       # Discriminator
       D_real, D_logit_real = self.discriminator.discriminate(self._X)
@@ -77,7 +82,7 @@ class GAN_model(object):
       D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_sample)
       D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
 
-
+      self.D_in_fake = D_in_fake
     with tf.variable_scope('D_loss'):
       D_loss_real = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
@@ -158,6 +163,7 @@ class GAN_model(object):
   def run_train_step(self, sess, summary_writer, logging=False):
     """Runs one training iteration. Returns a dictionary containing train op,
     summaries, loss, global_step"""
+    _Z = np.random.uniform(-1,1,[self._hps.batch_size, self._hps.gen_input_size])
 
     ######
     to_return_D = {
@@ -168,7 +174,7 @@ class GAN_model(object):
       'global_step_D': self.global_step_D,
       'global_step': self.global_step,
     }
-    results_D = sess.run(to_return_D)
+    results_D = sess.run(to_return_D,feed_dict = {self._Z: _Z})
 
     ######
 
@@ -180,7 +186,7 @@ class GAN_model(object):
       'global_step_D_in': self.global_step_D_in,
       'global_step': self.global_step,
     }
-    results_D_in = sess.run(to_return_D_in)
+    results_D_in = sess.run(to_return_D_in,feed_dict = {self._Z: _Z})
 
     ######
 
@@ -189,12 +195,18 @@ class GAN_model(object):
       'summaries': self._summaries_G,
       'summaries_all': self._summaries_All,
       'loss': self._G_loss,
+      'D_in_fake': self.D_in_fake,
       'global_step_G': self.global_step_G,
       'global_step': self.global_step,
 
     }
 
-    results_G = sess.run(to_return_G)
+
+    results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z})
+    count = 1
+    while np.mean(results_G['D_in_fake']) < 0.5 and count < 5:
+      results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z})
+      count += 1
 
     # we will write these summaries to tensorboard using summary_writer
     summaries_G = results_G['summaries']
@@ -239,8 +251,9 @@ class GAN_model(object):
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""
+    _Z_sample = np.random.uniform(-1,1,[20, self._hps.gen_input_size])
 
     to_return = {
-      'g_sample': self.G_sample,
+      'g_sample': self.G_sample_test,
     }
-    return sess.run(to_return)
+    return sess.run(to_return,feed_dict = {self._Z_sample: _Z_sample})
