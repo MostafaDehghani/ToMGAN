@@ -79,15 +79,15 @@ class GAN_model(object):
       self.generator = Generator(self._hps)
 
       # Generator
-      self.G_sample = self.generator.generate(self._Z)
+      self.G_sample = self.generator.generate(self._Z,reuse=False)
       self.G_sample_test = self.generator.generate(self._Z_sample)
 
       # Discriminator
-      D_real, D_logit_real = self.discriminator.discriminate(self._X)
+      D_real, D_logit_real = self.discriminator.discriminate(self._X,reuse=False)
       D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
 
       # Inner Discriminator
-      D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_sample)
+      D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_sample,reuse=False)
       D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
 
       self.D_in_fake = D_in_fake

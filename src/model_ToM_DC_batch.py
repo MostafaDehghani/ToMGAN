@@ -77,11 +77,11 @@ class GAN_model(object):
       self.generator = Generator(self._hps)
 
       # Generator
-      self.G_presample = self.generator.generate(self._preZ)
+      self.G_presample = self.generator.generate(self._preZ,reuse=False)
       self.G_sample_test = self.generator.generate(self._Z_sample)
 
       # Inner Discriminator
-      D_in_fake_presample, D_in_logit_fake_presample = self.discriminator_inner.discriminate(self.G_presample)
+      D_in_fake_presample, D_in_logit_fake_presample = self.discriminator_inner.discriminate(self.G_presample,reuse=False)
       D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
 
       values, indices =  tf.nn.top_k(D_in_fake_presample[:,0],self._hps.batch_size)
@@ -93,7 +93,7 @@ class GAN_model(object):
       D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_selected_samples)
 
       # Discriminator
-      D_real, D_logit_real = self.discriminator.discriminate(self._X)
+      D_real, D_logit_real = self.discriminator.discriminate(self._X,reuse=False)
       D_fake, D_logit_fake = self.discriminator.discriminate(self.G_selected_samples)
 
 
