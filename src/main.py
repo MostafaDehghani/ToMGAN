@@ -32,7 +32,7 @@ tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                                    'as the input for the generator')
 tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
-tf.app.flags.DEFINE_integer('logging_step', 100, 'logging step')
+tf.app.flags.DEFINE_integer('logging_step', 10, 'logging step')
 tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
                             """number of examples for train""")
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
@@ -131,8 +131,14 @@ def main(unused_argv):
     from model_DCGAN_vanilla import GAN_model
   elif FLAGS.model == 'vanilla':
     from model_vanilla_autoInput import GAN_model
-  elif FLAGS.model == 'ToM_cycle':
-    from model_ToM_cycle_while import GAN_model
+  elif FLAGS.model == 'ToM':
+    from model_ToM import GAN_model
+  elif FLAGS.model == 'ToM_batch':
+    from model_ToM_batch import GAN_model
+  elif FLAGS.model == 'ToM_while':
+    from model_ToM_while import GAN_model
+  elif FLAGS.model == 'ToM_DC':
+    from model_ToM_DC import GAN_model
   else:
     raise ValueError("Model name does not exist!")
 
