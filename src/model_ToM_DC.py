@@ -9,8 +9,8 @@ import os
 
 from tensorflow.examples.tutorials.mnist import mnist
 
-from discriminator import Discriminator
-from generator import Generator
+from dc_discriminator import Discriminator
+from dc_generator import Generator
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -33,20 +33,30 @@ class GAN_model(object):
                                                         'width': tf.FixedLenFeature([], tf.int64),
                                                         'depth': tf.FixedLenFeature([], tf.int64)})
     image = tf.decode_raw(features['image_raw'], tf.uint8)
-    image.set_shape((28,28,1))
-    image = tf.cast(image, tf.float32) * (2 / 255) - 1.0
+    height = tf.cast(features['height'], tf.int32)
+    width = tf.cast(features['width'], tf.int32)
+    depth = tf.cast(features['depth'], tf.int32)
+
+    image = tf.reshape(image, shape=(28, 28, 1))
+    image = tf.cast(image, tf.float32) * (2. / 255) - 1.
+    #image = tf.image.encode_jpeg(image)
+    #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
+
     #image = tf.image.resize_image_with_crop_or_pad(image, CROP_IMAGE_SIZE, CROP_IMAGE_SIZE)
     #image = tf.image.random_flip_left_right(image)
 
     min_queue_examples = self._hps.batch_size * 2
-    images = tf.train.shuffle_batch(
-      [image],
+    images,heights,widths,depths = tf.train.shuffle_batch(
+      [image,height,width,depth],
       batch_size=batch_size,
       capacity=min_queue_examples + 3 * batch_size,
       min_after_dequeue=min_queue_examples)
+
     tf.summary.image('images', images)
 
     return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
+
+
 
   def _build_GAN(self):
 
@@ -67,15 +77,15 @@ class GAN_model(object):
       self.generator = Generator(self._hps)
 
       # Generator
-      self.G_sample = self.generator.generate(self._Z)
+      self.G_sample = self.generator.generate(self._Z,reuse=False)
       self.G_sample_test = self.generator.generate(self._Z_sample)
 
       # Discriminator
-      D_real, D_logit_real = self.discriminator.discriminate(self._X)
+      D_real, D_logit_real = self.discriminator.discriminate(self._X,reuse=False)
       D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
 
       # Inner Discriminator
-      D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_sample)
+      D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_sample,reuse=False)
       D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
 
 
