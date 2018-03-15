@@ -68,9 +68,9 @@ class GAN_model(object):
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
       self._Z = tf.placeholder(dtype=tf.float32, name='Z',
-                               shape=[None, self._hps.gen_input_size])
+                               shape=[self._hps.batch_size, self._hps.gen_input_size])
       self._Z_sample = tf.placeholder(dtype=tf.float32, name='Z',
-                               shape=[None, self._hps.gen_input_size])
+                               shape=[20, self._hps.gen_input_size])
 
 
 
