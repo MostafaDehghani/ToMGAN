@@ -139,6 +139,10 @@ def main(unused_argv):
     from model_ToM_while import GAN_model
   elif FLAGS.model == 'ToM_DC':
     from model_ToM_DC import GAN_model
+  elif FLAGS.model == 'ToM_DC_batch':
+    from model_ToM_batch import GAN_model
+  elif FLAGS.model == 'ToM_DC_while':
+    from model_ToM_while import GAN_model
   else:
     raise ValueError("Model name does not exist!")
 
