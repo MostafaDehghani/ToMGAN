@@ -188,6 +188,8 @@ class GAN_model(object):
     """Runs one training iteration. Returns a dictionary containing train op,
     summaries, loss, global_step"""
     _Z = np.random.uniform(-1,1,[self._hps.batch_size, self._hps.gen_input_size])
+    _Z_sample = np.random.uniform(-1,1,[20, self._hps.gen_input_size])
+
 
     ######
     to_return_D = {
@@ -198,7 +200,7 @@ class GAN_model(object):
       'global_step_D': self.global_step_D,
       'global_step': self.global_step,
     }
-    results_D = sess.run(to_return_D,feed_dict = {self._Z: _Z})
+    results_D = sess.run(to_return_D,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample })
 
     ######
 
@@ -210,7 +212,7 @@ class GAN_model(object):
       'global_step_D_in': self.global_step_D_in,
       'global_step': self.global_step,
     }
-    results_D_in = sess.run(to_return_D_in,feed_dict = {self._Z: _Z})
+    results_D_in = sess.run(to_return_D_in,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
 
     ######
 
@@ -226,10 +228,10 @@ class GAN_model(object):
     }
 
 
-    results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z})
+    results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
     count = 1
     while np.mean(results_G['D_in_fake']) < 0.5 and count < 5:
-      results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z})
+      results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
       count += 1
 
     # we will write these summaries to tensorboard using summary_writer
@@ -272,6 +274,12 @@ class GAN_model(object):
 
       # flush the summary writer every so often
       summary_writer.flush()
+
+
+  def run_eval_step(self,sess):
+    _Z = np.random.uniform(-1,1,[self._hps.batch_size, self._hps.gen_input_size])
+    _Z_sample = np.random.uniform(-1,1,[20, self._hps.gen_input_size])
+    return sess.run([self.eval_score,self.frechet_distance],feed_dict = {self._Z_sample: _Z_sample, self._Z: _Z})
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""
