@@ -12,9 +12,10 @@ from tensorflow.examples.tutorials.mnist import mnist
 from discriminator import Discriminator
 from generator import Generator
 
-import sys
-sys.path.append(os.path.join('..', '..', 'models-master', 'research', 'gan'))
+sys.path.append(os.path.join('..', 'models', 'research', 'gan'))
 from mnist import util
+
+MNIST_CLASSIFIER_FROZEN_GRAPH = '../models/research/gan/mnist/data/classify_mnist_graph_def.pb'
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -127,7 +128,6 @@ class GAN_model(object):
 
 
     with tf.variable_scope('GAN_Eval'):
-      MNIST_CLASSIFIER_FROZEN_GRAPH = '../../models-master/research/gan/mnist/data/classify_mnist_graph_def.pb'
       tf.logging.info(self.G_sample_test.shape)
       eval_fake_images = tf.image.resize_images(self.G_sample_test,[28,28])
       eval_real_images = tf.image.resize_images(self._X[:20],[28,28])

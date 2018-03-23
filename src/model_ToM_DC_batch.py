@@ -11,10 +11,13 @@ from tensorflow.examples.tutorials.mnist import mnist
 
 from dc_discriminator import Discriminator
 from dc_generator import Generator
-
 import sys
-sys.path.append(os.path.join('..', '..', 'models-master', 'research', 'gan'))
+sys.path.append(os.path.join('..', 'models', 'research', 'gan'))
 from mnist import util
+
+INPUT_IMAGE_SIZE = 28
+CROP_IMAGE_SIZE = 28
+MNIST_CLASSIFIER_FROZEN_GRAPH = '../models/research/gan/mnist/data/classify_mnist_graph_def.pb'
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -135,7 +138,6 @@ class GAN_model(object):
 
 
     with tf.variable_scope('GAN_Eval'):
-      MNIST_CLASSIFIER_FROZEN_GRAPH = '../../models-master/research/gan/mnist/data/classify_mnist_graph_def.pb'
       tf.logging.info(self.G_sample_test.shape)
       eval_fake_images = tf.image.resize_images(self.G_sample_test,[28,28])
       eval_real_images = tf.image.resize_images(self._X[:20],[28,28])
@@ -278,7 +280,7 @@ class GAN_model(object):
 
   def run_eval_step(self,sess):
 
-    feed_dic ={self._Z: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
+    feed_dic ={self._Z_sample: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
     return sess.run([self.eval_score,self.frechet_distance],feed_dict=feed_dic)
 
   def sample_generator(self, sess):

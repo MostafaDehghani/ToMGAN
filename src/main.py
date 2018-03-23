@@ -32,7 +32,7 @@ tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                                    'as the input for the generator')
 tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
-tf.app.flags.DEFINE_integer('logging_step', 10, 'logging step')
+tf.app.flags.DEFINE_integer('logging_step', 500, 'logging step')
 tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
                             """number of examples for train""")
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
@@ -119,7 +119,7 @@ def main(unused_argv):
   hps_dict = {}
   for key, val in FLAGS.__flags.items():  # for each flag
     if key in hparam_list:  # if it's in the list
-      hps_dict[key] = val.value  # add it to the dict
+      hps_dict[key] = val # add it to the dict
   hps = namedtuple("HParams", hps_dict.keys())(**hps_dict)
 
   # Create a batcher object that will create minibatches of data
