@@ -12,6 +12,10 @@ from tensorflow.examples.tutorials.mnist import mnist
 from dc_discriminator import Discriminator
 from dc_generator import Generator
 
+import sys
+sys.path.append(os.path.join('..', '..', 'models-master', 'research', 'gan'))
+from mnist import util
+
 FLAGS = tf.app.flags.FLAGS
 
 
@@ -128,6 +132,19 @@ class GAN_model(object):
                                     (logits=D_in_logit_fake,
                                      labels=tf.ones_like(D_in_logit_fake)))
       tf.summary.scalar('G_loss', self._G_loss, collections=['Gen'])
+
+
+    with tf.variable_scope('GAN_Eval'):
+      MNIST_CLASSIFIER_FROZEN_GRAPH = '../../models-master/research/gan/mnist/data/classify_mnist_graph_def.pb'
+      tf.logging.info(self.G_sample_test.shape)
+      eval_fake_images = tf.image.resize_images(self.G_sample_test,[28,28])
+      eval_real_images = tf.image.resize_images(self._X[:20],[28,28])
+      self.eval_score = util.mnist_score(eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
+      self.frechet_distance = util.mnist_frechet_distance(
+        eval_real_images, eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
+
+      tf.summary.scalar('MNIST_Score',self.eval_score,collections=['All'])
+      tf.summary.scalar('frechet_distance', self.frechet_distance, collections=['All'])
 
   def _add_train_op(self):
     """Sets self._train_op, the op to run for training.
@@ -257,6 +274,12 @@ class GAN_model(object):
 
       # flush the summary writer every so often
       summary_writer.flush()
+
+
+  def run_eval_step(self,sess):
+
+    feed_dic ={self._Z: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
+    return sess.run([self.eval_score,self.frechet_distance],feed_dict=feed_dic)
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""

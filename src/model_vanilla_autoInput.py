@@ -11,8 +11,10 @@ import time
 from discriminator import Discriminator
 from generator import Generator
 
+import sys
+sys.path.append(os.path.join('..', '..', 'models-master', 'research', 'gan'))
 
-
+from mnist import util
 
 class GAN_model(object):
   """"""
@@ -97,6 +99,20 @@ class GAN_model(object):
                                     (logits=D_logit_fake,
                                      labels=tf.ones_like(D_logit_fake)))
       tf.summary.scalar('G_loss', self._G_loss,collections=['Gen'])
+
+
+    with tf.variable_scope('GAN_Eval'):
+      MNIST_CLASSIFIER_FROZEN_GRAPH = '../../models-master/research/gan/mnist/data/classify_mnist_graph_def.pb'
+      tf.logging.info(self.G_sample.shape)
+      eval_images = tf.reshape(self.G_sample, [-1, 28, 28, 1])
+      tf.logging.info(eval_images.shape)
+
+      self.eval_score = util.mnist_score(eval_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
+      self.frechet_distance = util.mnist_frechet_distance(
+        tf.reshape(self._X[:20], [-1, 28, 28, 1]), eval_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
+
+      tf.summary.scalar('MNIST_Score',self.eval_score,collections=['All'])
+      tf.summary.scalar('frechet_distance', self.frechet_distance, collections=['All'])
 
 
   def _add_train_op(self):
@@ -227,6 +243,12 @@ class GAN_model(object):
         # flush the summary writer every so often
         summary_writer.flush()
 
+
+
+  def run_eval_step(self,sess):
+
+    feed_dic ={self._Z: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
+    return sess.run([self.eval_score,self.frechet_distance],feed_dict=feed_dic)
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""

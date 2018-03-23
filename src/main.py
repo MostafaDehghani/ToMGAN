@@ -84,6 +84,7 @@ def run_training(model, sess_context_manager, summary_writer):
       sess = tf_debug.LocalCLIDebugWrapperSession(sess)
       sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
     num_batch = 0
+
     while True:  # repeats until interrupted
       if num_batch % FLAGS.logging_step == 0:
         tf.logging.info('------ number of  batches: ' + str(num_batch) + ' ------')
@@ -94,7 +95,7 @@ def run_training(model, sess_context_manager, summary_writer):
         tf.logging.info("sampling from the generator")
         sampling_result = model.sample_generator(sess)
         util.plot(sampling_result['g_sample'], num_batch)
-
+        print(model.run_eval_step(sess))
       else:  # no logging
         model.run_train_step(sess, summary_writer, logging=False)
 
