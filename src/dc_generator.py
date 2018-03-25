@@ -2,11 +2,11 @@ import tensorflow as tf
 
 
 class Generator(object):
-  def __init__(self, hps, scope='generator', depths=[1024, 512, 256, 128], s_size=4):
+  def __init__(self, hps, scope='generator', depths=[1024, 512, 256, 128], s_size=4,channels=1):
     self._hps = hps
     self._scope = scope
     self.initializer = tf.contrib.layers.xavier_initializer
-    self.depths = depths + [1]
+    self.depths = depths + [channels]
     self.s_size = s_size
     self._buid_generator_graph()
 

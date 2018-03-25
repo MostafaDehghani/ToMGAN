@@ -10,3 +10,4 @@ log_root/*
 .idea/*
 .idea
 .ipynb_checkpoints/*
+*.tar.gz

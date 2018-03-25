@@ -35,7 +35,7 @@ def load_ckpt(saver, sess, ckpt_dir="train"):
                       "Sleeping for %i secs...", ckpt_dir, 10)
 
 
-def plot(samples, train_step):
+def plot(samples, train_step, channels=1):
   fig = plt.figure(figsize=(4, 5))
   gs = gridspec.GridSpec(4, 5)
   gs.update(wspace=0.05, hspace=0.05)
@@ -47,7 +47,7 @@ def plot(samples, train_step):
     ax.set_yticklabels([])
     ax.set_aspect('equal')
     if len(sample.shape) > 1:
-      plt.imshow(sample.reshape(sample.shape[0],sample.shape[1]), cmap='Greys_r')
+      plt.imshow(sample.reshape(sample.shape[0],sample.shape[1],channels), cmap='Greys_r')
     else:
       height = int(np.sqrt(sample.shape[0]))
       plt.imshow(sample.reshape(height, height), cmap='Greys_r')

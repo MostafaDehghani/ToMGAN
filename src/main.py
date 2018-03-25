@@ -11,9 +11,10 @@ import util
 FLAGS = tf.app.flags.FLAGS
 
 # Where to save output
-tf.app.flags.DEFINE_string('log_root', '../log_root', 'Root directory for all logging.')
+tf.app.flags.DEFINE_string('log_root', 'log_root', 'Root directory for all logging.')
 tf.app.flags.DEFINE_string('data_path', '../data/MNIST_data', 'Directory where the data '
                                                               'is going to be saved.')
+tf.app.flags.DEFINE_string('dataset_id', 'cifar', 'cifar/mnist')
 tf.app.flags.DEFINE_string('exp_name', 'main_experiment', 'Name for experiment. Logs will '
                                                           'be saved in a directory with this'
                                                           ' name, under log_root.')
@@ -94,7 +95,10 @@ def run_training(model, sess_context_manager, summary_writer):
         tf.logging.info('seconds for training step: %.3f', t1 - t0)
         tf.logging.info("sampling from the generator")
         sampling_result = model.sample_generator(sess)
-        util.plot(sampling_result['g_sample'], num_batch)
+        if FLAGS.dataset_id == "mnist":
+          util.plot(sampling_result['g_sample'], num_batch,1)
+        elif FLAGS.dataset_id == "cifar":
+          util.plot(sampling_result['g_sample'], num_batch, 3)
         print(model.run_eval_step(sess))
       else:  # no logging
         model.run_train_step(sess, summary_writer, logging=False)
@@ -109,17 +113,17 @@ def main(unused_argv):
   tf.logging.set_verbosity(tf.logging.INFO)  # choose what level of logging you want
 
   # Change log_root to FLAGS.log_root/FLAGS.exp_name and create the dir if necessary
-  FLAGS.log_root = os.path.join(FLAGS.log_root, FLAGS.model, FLAGS.exp_name)
+  FLAGS.log_root = os.path.join(FLAGS.log_root,FLAGS.dataset_id, FLAGS.model, FLAGS.exp_name)
   if not os.path.exists(FLAGS.log_root):
     os.makedirs(FLAGS.log_root)
 
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
   hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size',
-                 'dis_output_size', 'gen_output_size', 'data_path', 'num_examples_per_epoch_for_train']
+                 'dis_output_size', 'gen_output_size', 'data_path','dataset_id','num_examples_per_epoch_for_train']
   hps_dict = {}
   for key, val in FLAGS.__flags.items():  # for each flag
     if key in hparam_list:  # if it's in the list
-      hps_dict[key] = val # add it to the dict
+      hps_dict[key] = val.value # add it to the dict
   hps = namedtuple("HParams", hps_dict.keys())(**hps_dict)
 
   # Create a batcher object that will create minibatches of data
@@ -128,24 +132,44 @@ def main(unused_argv):
   tf.set_random_seed(111)  # a seed value for randomness
   print("creating model...")
 
-  if FLAGS.model == 'vanilla_dc':
-    from model_DCGAN_vanilla import GAN_model
-  elif FLAGS.model == 'vanilla':
-    from model_vanilla_autoInput import GAN_model
-  elif FLAGS.model == 'ToM':
-    from model_ToM import GAN_model
-  elif FLAGS.model == 'ToM_batch':
-    from model_ToM_batch import GAN_model
-  elif FLAGS.model == 'ToM_while':
-    from model_ToM_while import GAN_model
-  elif FLAGS.model == 'ToM_DC':
-    from model_ToM_DC import GAN_model
-  elif FLAGS.model == 'ToM_DC_batch':
-    from model_ToM_DC_batch import GAN_model
-  elif FLAGS.model == 'ToM_DC_while':
-    from model_ToM_DC_while import GAN_model
-  else:
-    raise ValueError("Model name does not exist!")
+  if FLAGS.dataset_id == 'mnist':
+    if FLAGS.model == 'vanilla_dc':
+      from model_DCGAN_vanilla import GAN_model
+    elif FLAGS.model == 'vanilla':
+      from model_vanilla_autoInput import GAN_model
+    elif FLAGS.model == 'ToM':
+      from model_ToM import GAN_model
+    elif FLAGS.model == 'ToM_batch':
+      from model_ToM_batch import GAN_model
+    elif FLAGS.model == 'ToM_while':
+      from model_ToM_while import GAN_model
+    elif FLAGS.model == 'ToM_DC':
+      from model_ToM_DC import GAN_model
+    elif FLAGS.model == 'ToM_DC_batch':
+      from model_ToM_DC_batch import GAN_model
+    elif FLAGS.model == 'ToM_DC_while':
+      from model_ToM_DC_while import GAN_model
+    else:
+      raise ValueError("Model name does not exist!")
+  elif FLAGS.dataset_id == 'cifar':
+    if FLAGS.model == 'vanilla_dc':
+      from model_DCGAN_vanilla_cifar import GAN_model
+    elif FLAGS.model == 'vanilla':
+      from model_vanilla_autoInput import GAN_model
+    elif FLAGS.model == 'ToM':
+      from model_ToM import GAN_model
+    elif FLAGS.model == 'ToM_batch':
+      from model_ToM_batch import GAN_model
+    elif FLAGS.model == 'ToM_while':
+      from model_ToM_while import GAN_model
+    elif FLAGS.model == 'ToM_DC':
+      from model_ToM_DC import GAN_model
+    elif FLAGS.model == 'ToM_DC_batch':
+      from model_ToM_DC_batch import GAN_model
+    elif FLAGS.model == 'ToM_DC_while':
+      from model_ToM_DC_while import GAN_model
+    else:
+      raise ValueError("Model name does not exist!")
 
   model = GAN_model(hps)
   setup_training(model)

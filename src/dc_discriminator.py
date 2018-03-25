@@ -2,11 +2,11 @@ import tensorflow as tf
 
 
 class Discriminator(object):
-  def __init__(self, hps, scope='discriminator', depths=[64, 128, 256, 512]):
+  def __init__(self, hps, scope='discriminator', depths=[64, 128, 256, 512],channels=1):
     self._hps = hps
     self._scope = scope
     self.initializer = tf.contrib.layers.xavier_initializer()
-    self.depths = [1] + depths
+    self.depths = [channels] + depths
     self._buid_discriminator_graph()
 
   def _buid_discriminator_graph(self):
