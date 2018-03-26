@@ -59,25 +59,36 @@ class GAN_model(object):
 
 
     with tf.variable_scope('D_loss'):
-      D_loss_real = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
-                                                labels=tf.ones_like(
-                                                  D_logit_real)))
-      D_loss_fake = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake,
-                                                labels=tf.zeros_like(
-                                                  D_logit_fake)))
-      self._D_loss = D_loss_real + D_loss_fake
-      tf.summary.scalar('D_loss_real', D_loss_real, collections=['Dis'])
-      tf.summary.scalar('D_loss_fake', D_loss_fake, collections=['Dis'])
+      if self._hps.loss == 'normal':
+        D_loss_real = tf.reduce_mean(
+          tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
+                                                  labels=tf.ones_like(
+                                                    D_logit_real)))
+        D_loss_fake = tf.reduce_mean(
+          tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake,
+                                                  labels=tf.zeros_like(
+                                                    D_logit_fake)))
+        self._D_loss = D_loss_real + D_loss_fake
+        tf.summary.scalar('D_loss_real', D_loss_real, collections=['Dis'])
+        tf.summary.scalar('D_loss_fake', D_loss_fake, collections=['Dis'])
+
+      elif self._hps.loss == "wasserstein":
+        self._D_loss = tf.contrib.gan.losses.wargs.wasserstein_discriminator_loss(D_logit_real,
+                                                                                  D_logit_fake)
+
+
       tf.summary.scalar('D_loss', self._D_loss, collections=['Dis'])
-      tf.summary.scalar('D_out', tf.reduce_mean(D_logit_fake), collections=['Dis'])
+      tf.summary.scalar('D_out', tf.reduce_mean(D_fake), collections=['Dis'])
 
 
     with tf.variable_scope('G_loss'):
-      self._G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits
-                                    (logits=D_logit_fake,
-                                     labels=tf.ones_like(D_logit_fake)))
+      if self._hps.loss == "normal":
+        self._G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits
+                                      (logits=D_logit_fake,
+                                       labels=tf.ones_like(D_logit_fake)))
+      elif self._hps.loss == "wasserstein":
+        self._G_loss = tf.contrib.gan.losses.wargs.wasserstein_generator_loss(D_logit_fake)
+
       tf.summary.scalar('G_loss', self._G_loss, collections=['Gen'])
 
     with tf.variable_scope('GAN_Eval'):

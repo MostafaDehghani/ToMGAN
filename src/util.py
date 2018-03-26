@@ -47,7 +47,7 @@ def plot(samples, train_step, channels=1):
     ax.set_yticklabels([])
     ax.set_aspect('equal')
     if len(sample.shape) > 1:
-      plt.imshow(sample.reshape(sample.shape[0],sample.shape[1],channels), cmap='Greys_r')
+      plt.imshow(sample.reshape(sample.shape[0],sample.shape[1],channels))
     else:
       height = int(np.sqrt(sample.shape[0]))
       plt.imshow(sample.reshape(height, height), cmap='Greys_r')
