@@ -36,7 +36,8 @@ tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
 tf.app.flags.DEFINE_integer('gen_input_size', 100, 'size of the noise vector '
                                                    'as the input for the generator')
 tf.app.flags.DEFINE_integer('gen_output_size', 784, 'size of the generator output vector')
-tf.app.flags.DEFINE_integer('logging_step', 500, 'logging step')
+tf.app.flags.DEFINE_integer('logging_step',
+, 'logging step')
 tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
                             """number of examples for train""")
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
@@ -63,8 +64,8 @@ def setup_training(model):
                            is_chief=True,
                            saver=saver,
                            summary_op=None,
-                           save_summaries_secs=60,  # save summaries for tensorboard every 60 secs
-                           save_model_secs=60,  # checkpoint every 60 secs
+                           save_summaries_secs=120,  # save summaries for tensorboard every 60 secs
+                           save_model_secs=120,  # checkpoint every 60 secs
                            global_step=None
                            )
 
@@ -170,7 +171,7 @@ def main(unused_argv):
     elif FLAGS.model == 'ToM_DC':
       from model_ToM_DC import GAN_model
     elif FLAGS.model == 'ToM_DC_batch':
-      from model_ToM_DC_batch import GAN_model
+      from model_ToM_DC_batch_cifar import GAN_model
     elif FLAGS.model == 'ToM_DC_while':
       from model_ToM_DC_while import GAN_model
     else:
