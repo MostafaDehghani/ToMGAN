@@ -35,7 +35,7 @@ class GAN_model(object):
       with tf.device('/cpu:0'):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
-        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4,3])
         tf.summary.image("real_images",images[0], collections=["All"])
 
     with tf.variable_scope('gan'):
