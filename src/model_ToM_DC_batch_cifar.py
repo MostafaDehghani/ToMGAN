@@ -57,9 +57,9 @@ class GAN_model(object):
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
 
-      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner')
-      self.discriminator = Discriminator(self._hps)
-      self.generator = Generator(self._hps)
+      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner',channels=3)
+      self.discriminator = Discriminator(self._hps,channels=3)
+      self.generator = Generator(self._hps,channels=3)
 
       # Generator
       self.G_presample = self.generator.generate(self._preZ,reuse=False)
