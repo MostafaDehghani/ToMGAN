@@ -33,7 +33,7 @@ class GAN_model(object):
     self.generator = Generator(self._hps,channels=3)
 
     with tf.name_scope('inputs'):
-      with tf.device('/cpu:0'):
+      with tf.device('/cpu:'+self._hps.gpu_id):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
         images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
