@@ -13,8 +13,11 @@ from dc_discriminator import Discriminator
 from dc_generator import Generator
 
 import sys
-sys.path.append(os.path.join('..', 'models', 'research', 'gan'))
-from mnist import util
+sys.path.append(os.path.join('..', 'models', 'research'))
+sys.path.append(os.path.join('..', 'models', 'research','slim'))
+
+from gan.cifar import util
+from gan.cifar import data_provider
 
 INPUT_IMAGE_SIZE = 28
 CROP_IMAGE_SIZE = 28
@@ -30,48 +33,21 @@ class GAN_model(object):
     self._hps = hps
     self.s_size = s_size
 
-  def inputs(self, batch_size, s_size):
-    files = [os.path.join(self._hps.data_path, f) for f in os.listdir(self._hps.data_path) if f.endswith('.tfrecords')]
-    print("tfrecord files: ", files)
-    fqueue = tf.train.string_input_producer(files)
-    reader = tf.TFRecordReader()
-    _, value = reader.read(fqueue)
-    features = tf.parse_single_example(value, features={'image_raw': tf.FixedLenFeature([], tf.string),
-                                                        'height': tf.FixedLenFeature([], tf.int64),
-                                                        'width': tf.FixedLenFeature([], tf.int64),
-                                                        'depth': tf.FixedLenFeature([], tf.int64)})
-    image = tf.decode_raw(features['image_raw'], tf.uint8)
-    height = tf.cast(features['height'], tf.int32)
-    width = tf.cast(features['width'], tf.int32)
-    depth = tf.cast(features['depth'], tf.int32)
-
-    image = tf.reshape(image, shape=(28, 28, 1))
-    image = tf.cast(image, tf.float32) * (2. / 255) - 1.
-    #image = tf.image.encode_jpeg(image)
-    #image = tf.cast(tf.image.decode_jpeg(image, channels=1), tf.float32)
-
-    #image = tf.image.resize_image_with_crop_or_pad(image, CROP_IMAGE_SIZE, CROP_IMAGE_SIZE)
-    #image = tf.image.random_flip_left_right(image)
-
-    min_queue_examples = self._hps.batch_size * 2
-    images,heights,widths,depths = tf.train.shuffle_batch(
-      [image,height,width,depth],
-      batch_size=batch_size,
-      capacity=min_queue_examples + 3 * batch_size,
-      min_after_dequeue=min_queue_examples)
-
-    tf.summary.image('images', images)
-
-    return tf.image.resize_images(images, [s_size * 2 ** 4, s_size * 2 ** 4])
 
   def _build_GAN(self):
 
     self.initializer = tf.contrib.layers.xavier_initializer
 
+    with tf.name_scope('inputs'):
+      with tf.device('/cpu:'+self._hps.gpu_id):
+        images, one_hot_labels, _, _ = data_provider.provide_data(
+          self._hps.batch_size, self._hps.data_path)
+        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        tf.summary.image("real_images",images, max_outputs=10, collections=["All"])
 
     with tf.variable_scope('gan'):
       # discriminator input from real data
-      self._X = self.inputs(self._hps.batch_size, self.s_size)
+      self._X = images
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
@@ -82,9 +58,9 @@ class GAN_model(object):
 
 
 
-      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner')
-      self.discriminator = Discriminator(self._hps)
-      self.generator = Generator(self._hps)
+      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner',channels=3)
+      self.discriminator = Discriminator(self._hps,channels=3)
+      self.generator = Generator(self._hps,channels=3)
 
       # Generator
       self.G_sample = self.generator.generate(self._Z,reuse=False)
@@ -131,35 +107,42 @@ class GAN_model(object):
 
     with tf.variable_scope('GAN_Eval'):
       tf.logging.info(self.G_sample_test.shape)
-      eval_fake_images = tf.image.resize_images(self.G_sample_test,[28,28])
-      eval_real_images = tf.image.resize_images(self._X[:20],[28,28])
-      self.eval_score = util.mnist_score(eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
-      self.frechet_distance = util.mnist_frechet_distance(
-        eval_real_images, eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
+      if self._hps.dataset_id == "cifar":
+        num_images_generated = 20
+        num_inception_images = 10
+        eval_fake_images = self.G_sample_test
+        eval_real_images = self._X[:20]
+        fid = util.get_frechet_inception_distance(
+          eval_real_images, eval_fake_images, num_images_generated,
+          num_inception_images)
 
-      tf.summary.scalar('MNIST_Score',self.eval_score,collections=['All'])
-      tf.summary.scalar('frechet_distance', self.frechet_distance, collections=['All'])
+        inc_score = util.get_inception_scores(
+          eval_fake_images, num_images_generated, num_inception_images)
+
+        self.score, self.distance = fid, inc_score
+        tf.summary.scalar('inception_score', inc_score, collections=['All'])
+        tf.summary.scalar('frechet_inception_distance', fid, collections=['All'])
+        tf.summary.image("generated_images", eval_fake_images, max_outputs=10, collections=["All"])
 
   def _add_train_op(self):
     """Sets self._train_op, the op to run for training.
     """
-    with tf.device("/gpu:0"):
-      learning_rate_D = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
-      #                                           100000, 0.96, staircase=True)
-      learning_rate_G = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_G,
-      #                                           100000, 0.96, staircase=True)
-      learning_rate_D_in = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
-      #                                           100000, 0.96, staircase=True)
-      self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=0.5).minimize(self._D_loss,
-                                                           global_step=self.global_step_D,
-                                                           var_list=self.discriminator._theta)
-      self._train_op_D_in = tf.train.AdamOptimizer(learning_rate_D_in,beta1=0.5).minimize(self._D_in_loss,
-                                                              global_step=self.global_step_D_in,
-                                                              var_list=self.discriminator_inner._theta)
+    learning_rate_D = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
+    #                                           100000, 0.96, staircase=True)
+    learning_rate_G = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_G,
+    #                                           100000, 0.96, staircase=True)
+    learning_rate_D_in = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
+    #                                           100000, 0.96, staircase=True)
+    self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=0.5).minimize(self._D_loss,
+                                                         global_step=self.global_step_D,
+                                                         var_list=self.discriminator._theta)
+    self._train_op_D_in = tf.train.AdamOptimizer(learning_rate_D_in,beta1=0.5).minimize(self._D_in_loss,
+                                                            global_step=self.global_step_D_in,
+                                                            var_list=self.discriminator_inner._theta)
 
-      self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=0.5).minimize(self._G_loss,
-                                                           global_step=self.global_step_G,
-                                                           var_list=self.generator._theta)
+    self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=0.5).minimize(self._G_loss,
+                                                         global_step=self.global_step_G,
+                                                         var_list=self.generator._theta)
 
   def build_graph(self):
     """Add the model, global step, train_op and summaries to the graph"""
