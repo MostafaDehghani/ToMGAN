@@ -21,6 +21,8 @@ tf.app.flags.DEFINE_string('exp_name', 'main_experiment', 'Name for experiment. 
 tf.app.flags.DEFINE_string('model', 'vanilla', 'must be one of '
                                                'vanilla/ToM_cycle')
 tf.app.flags.DEFINE_string('loss', 'normal', 'normal/wasserstein')
+tf.app.flags.DEFINE_string('gpu_id', '0', 'gpu id')
+
 tf.app.flags.DEFINE_integer('hidden_dim', 128, 'dimension of hidden states '
                                                'in discriminator and generator')
 tf.app.flags.DEFINE_integer('batch_size', 64, 'minibatch size')
@@ -51,7 +53,8 @@ def setup_training(model):
   train_dir = os.path.join(FLAGS.log_root, "train")
   if not os.path.exists(train_dir): os.makedirs(train_dir)
 
-  model.build_graph()  # build the graph
+  with tf.device('/device:GPU:'+FLAGS.gpu_id):
+    model.build_graph()  # build the graph
   # if FLAGS.restore_last_model:
   #   restore_last_model()
   saver = tf.train.Saver(max_to_keep=3)  # keep 3 checkpoints at a time
@@ -70,7 +73,8 @@ def setup_training(model):
   sess_context_manager = sv.prepare_or_wait_for_session(config=util.get_config())
   tf.logging.info("Created session.")
   try:
-    run_training(model, sess_context_manager, summary_writer)
+    with tf.device('/device:GPU:' + FLAGS.gpu_id):
+      run_training(model, sess_context_manager, summary_writer)
     # this is an infinite loop until interrupted
   except KeyboardInterrupt:
     tf.logging.info("Caught keyboard interrupt on worker. Stopping supervisor...")

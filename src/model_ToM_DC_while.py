@@ -233,7 +233,7 @@ class GAN_model(object):
 
     results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
     count = 1
-    while np.mean(results_G['D_in_fake']) < 0.5 and count < 5:
+    while np.mean(results_G['D_in_fake']) < 0.5 and count < 10:
       results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
       count += 1
 

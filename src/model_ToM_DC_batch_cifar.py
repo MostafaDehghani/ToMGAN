@@ -7,6 +7,8 @@ import tensorflow as tf
 import numpy as np
 import os
 
+from tensorflow.examples.tutorials.mnist import mnist
+
 from dc_discriminator import Discriminator
 from dc_generator import Generator
 
@@ -17,20 +19,24 @@ from gan.cifar import util
 from gan.cifar import data_provider
 
 
+INPUT_IMAGE_SIZE = 28
+CROP_IMAGE_SIZE = 28
+MNIST_CLASSIFIER_FROZEN_GRAPH = '../models/research/gan/mnist/data/classify_mnist_graph_def.pb'
+
+FLAGS = tf.app.flags.FLAGS
+
+
 class GAN_model(object):
   """"""
 
   def __init__(self, hps, s_size=4):
     self._hps = hps
     self.s_size = s_size
-    print("data path: ",self._hps.data_path)
 
 
   def _build_GAN(self):
 
     self.initializer = tf.contrib.layers.xavier_initializer
-    self.discriminator = Discriminator(self._hps,channels=3)
-    self.generator = Generator(self._hps,channels=3)
 
     with tf.name_scope('inputs'):
       with tf.device('/cpu:0'):
@@ -39,73 +45,79 @@ class GAN_model(object):
         images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
         tf.summary.image("real_images",images, max_outputs=10, collections=["All"])
 
+
     with tf.variable_scope('gan'):
       # discriminator input from real data
-      self._X = images#self.inputs(self._hps.batch_size, self.s_size)
-      tf.logging.info(self._X)
+      self._X = images
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
+      self._preZ = tf.random_uniform([self._hps.batch_size*3, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
       self._Z = tf.random_uniform([self._hps.batch_size, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
-      # Generator
-      self.G_sample_test = self.generator.generate(self._Z_sample, reuse=False)
-      self.G_sample = self.generator.generate(self._Z)
 
-      tf.logging.info(self.G_sample)
+      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner')
+      self.discriminator = Discriminator(self._hps)
+      self.generator = Generator(self._hps)
+
+      # Generator
+      self.G_presample = self.generator.generate(self._preZ,reuse=False)
+      self.G_sample_test = self.generator.generate(self._Z_sample)
+
+      # Inner Discriminator
+      D_in_fake_presample, D_in_logit_fake_presample = self.discriminator_inner.discriminate(self.G_presample,reuse=False)
+      D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
+
+      values, indices =  tf.nn.top_k(D_in_fake_presample[:,0],self._hps.batch_size)
+      tf.logging.info(indices)
+      self.G_selected_samples = tf.gather(self.G_presample,indices)
+      tf.logging.info(self.G_selected_samples)
+
+
+      D_in_fake, D_in_logit_fake = self.discriminator_inner.discriminate(self.G_selected_samples)
 
       # Discriminator
-      D_real, D_logit_real = self.discriminator.discriminate(self._X, reuse=False)
-      D_fake, D_logit_fake = self.discriminator.discriminate(self.G_sample)
+      D_real, D_logit_real = self.discriminator.discriminate(self._X,reuse=False)
+      D_fake, D_logit_fake = self.discriminator.discriminate(self.G_selected_samples)
+
+
 
 
     with tf.variable_scope('D_loss'):
-      if self._hps.loss == 'normal':
-        D_loss_real = tf.reduce_mean(
-          tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
-                                                  labels=tf.ones_like(
-                                                    D_logit_real)))
-        D_loss_fake = tf.reduce_mean(
-          tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake,
-                                                  labels=tf.zeros_like(
-                                                    D_logit_fake)))
-        self._D_loss = D_loss_real + D_loss_fake
-        tf.summary.scalar('D_loss_real', D_loss_real, collections=['Dis'])
-        tf.summary.scalar('D_loss_fake', D_loss_fake, collections=['Dis'])
-
-      elif self._hps.loss == "wasserstein":
-        self._D_loss = tf.contrib.gan.losses.wargs.wasserstein_discriminator_loss(D_logit_real,
-                                                                                  D_logit_fake)
-
-
+      D_loss_real = tf.reduce_mean(
+        tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
+                                                labels=tf.ones_like(
+                                                  D_logit_real)))
+      D_loss_fake = tf.reduce_mean(
+        tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake,
+                                                labels=tf.zeros_like(
+                                                  D_logit_fake)))
+      self._D_loss = D_loss_real + D_loss_fake
+      tf.summary.scalar('D_loss_real', D_loss_real, collections=['Dis'])
+      tf.summary.scalar('D_loss_fake', D_loss_fake, collections=['Dis'])
       tf.summary.scalar('D_loss', self._D_loss, collections=['Dis'])
-      tf.summary.scalar('D_out', tf.reduce_mean(D_fake), collections=['Dis'])
+      tf.summary.scalar('D_out', tf.reduce_mean(D_logit_fake), collections=['Dis'])
 
+    with tf.variable_scope('D_in_loss'):
+      D_in_loss_fake = tf.reduce_mean(tf.losses.mean_squared_error(
+        predictions=D_in_logit_fake, labels=D_logit_fake))
+      D_in_loss_real = tf.reduce_mean(tf.losses.mean_squared_error(
+        predictions=D_in_logit_real, labels=D_logit_real))
+      self._D_in_loss = D_in_loss_fake + D_in_loss_real
+      tf.summary.scalar('D_in_loss', self._D_in_loss, collections=['Dis_in'])
+      tf.summary.scalar('D_in_out', tf.reduce_mean(D_in_logit_fake), collections=['Dis_in'])
 
     with tf.variable_scope('G_loss'):
-      if self._hps.loss == "normal":
-        self._G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits
-                                      (logits=D_logit_fake,
-                                       labels=tf.ones_like(D_logit_fake)))
-      elif self._hps.loss == "wasserstein":
-        self._G_loss = tf.contrib.gan.losses.wargs.wasserstein_generator_loss(D_logit_fake)
-
+      self._G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits
+                                    (logits=D_in_logit_fake,
+                                     labels=tf.ones_like(D_in_logit_fake)))
       tf.summary.scalar('G_loss', self._G_loss, collections=['Gen'])
+
 
     with tf.variable_scope('GAN_Eval'):
       tf.logging.info(self.G_sample_test.shape)
-      if self._hps.dataset_id == 'mnist':
-        eval_fake_images = tf.image.resize_images(self.G_sample_test,[28,28])
-        eval_real_images = tf.image.resize_images(self._X[:20],[28,28])
-        eval_score = util.mnist_score(eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
-        frechet_distance = util.mnist_frechet_distance(
-          eval_real_images, eval_fake_images, MNIST_CLASSIFIER_FROZEN_GRAPH)
-
-        self.score, self.distance = eval_score, frechet_distance
-        tf.summary.scalar('MNIST_Score',self.eval_score,collections=['All'])
-        tf.summary.scalar('frechet_distance', self.frechet_distance, collections=['All'])
-      elif self._hps.dataset_id == "cifar":
+      if self._hps.dataset_id == "cifar":
         num_images_generated = 20
         num_inception_images = 10
         eval_fake_images = self.G_sample_test
@@ -117,30 +129,30 @@ class GAN_model(object):
         inc_score = util.get_inception_scores(
           eval_fake_images, num_images_generated, num_inception_images)
 
-        self.score, self.distance = fid,inc_score
-        tf.summary.scalar('inception_score', inc_score,collections=['All'])
-        tf.summary.scalar('frechet_inception_distance', fid,collections=['All'])
-        tf.summary.image("generated_images",eval_fake_images, max_outputs=10, collections=["All"])
-
-
-
+        self.score, self.distance = fid, inc_score
+        tf.summary.scalar('inception_score', inc_score, collections=['All'])
+        tf.summary.scalar('frechet_inception_distance', fid, collections=['All'])
+        tf.summary.image("generated_images", eval_fake_images, max_outputs=10, collections=["All"])
 
   def _add_train_op(self):
     """Sets self._train_op, the op to run for training.
     """
-    #with tf.device("/gpu:0"):
-    learning_rate_D = 0.0002 #tf.train.exponential_decay(0.0001, self.global_step_D,
-                      #                           100000, 0.96, staircase=True)
-    learning_rate_G = 0.0002 #tf.train.exponential_decay(0.0001, self.global_step_G,
-                      #                           100000, 0.96, staircase=True)
-    b = 0.5
-    self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=b).minimize(self._D_loss,
-                                                         global_step=self.global_step_D,
-                                                         var_list=self.discriminator._theta)
+    learning_rate_D = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
+    #                                           100000, 0.96, staircase=True)
+    learning_rate_G = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_G,
+    #                                           100000, 0.96, staircase=True)
+    learning_rate_D_in = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
+    #                                           100000, 0.96, staircase=True)
+    self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=0.5).minimize(self._D_loss,
+                                                           global_step=self.global_step_D,
+                                                           var_list=self.discriminator._theta)
+    self._train_op_D_in = tf.train.AdamOptimizer(learning_rate_D_in,beta1=0.5).minimize(self._D_in_loss,
+                                                              global_step=self.global_step_D_in,
+                                                              var_list=self.discriminator_inner._theta)
 
-    self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=b).minimize(self._G_loss,
-                                                         global_step=self.global_step_G,
-                                                         var_list=self.generator._theta)
+    self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=0.5).minimize(self._G_loss,
+                                                           global_step=self.global_step_G,
+                                                           var_list=self.generator._theta)
 
   def build_graph(self):
     """Add the model, global step, train_op and summaries to the graph"""
@@ -183,6 +195,17 @@ class GAN_model(object):
     }
     results_D = sess.run(to_return_D)
 
+    ######
+
+    to_return_D_in = {
+      'train_op': self._train_op_D_in,
+      'summaries': self._summaries_D_in,
+      'summaries_all': self._summaries_All,
+      'loss': self._D_in_loss,
+      'global_step_D_in': self.global_step_D_in,
+      'global_step': self.global_step,
+    }
+    results_D_in = sess.run(to_return_D_in)
 
     ######
 
@@ -201,16 +224,20 @@ class GAN_model(object):
     # we will write these summaries to tensorboard using summary_writer
     summaries_G = results_G['summaries']
     summaries_D = results_D['summaries']
+    summaries_D_in = results_D_in['summaries']
     summaries_All = results_G['summaries_all']
 
     global_step_G = results_G['global_step_G']
     global_step_D = results_D['global_step_D']
+    global_step_D_in = results_D_in['global_step_D_in']
     global_step = results_G['global_step']
 
     summary_writer.add_summary(summaries_G,
                                global_step_G)  # write the summaries
     summary_writer.add_summary(summaries_D,
                                global_step_D)  # write the summaries
+    summary_writer.add_summary(summaries_D_in,
+                               global_step_D_in)  # write the summaries
     summary_writer.add_summary(summaries_All,
                                global_step)  # write the summaries
 
@@ -219,6 +246,9 @@ class GAN_model(object):
       loss_D = results_D['loss']
       tf.logging.info('loss_D: %f', loss_D)  # print the loss to screen
 
+      loss_D_in = results_D_in['loss']
+      tf.logging.info('loss_D_in: %f', loss_D_in)  # print the loss to screen
+
       loss_G = results_G['loss']
       tf.logging.info('loss_G: %f', loss_G)  # print the loss to screen
 
@@ -226,19 +256,17 @@ class GAN_model(object):
         raise Exception("Loss_G is not finite. Stopping.")
       if not np.isfinite(loss_D):
         raise Exception("Loss_D is not finite. Stopping.")
-
+      if not np.isfinite(loss_D_in):
+        raise Exception("Loss_D_in is not finite. Stopping.")
 
       # flush the summary writer every so often
       summary_writer.flush()
 
-  def run_eval_step(self,sess):
-    return sess.run([self.score,self.distance])
 
-  def sample_input(self,sess):
-    to_return = {
-      'input_images': self._X,
-    }
-    return sess.run(to_return)
+  def run_eval_step(self,sess):
+
+    feed_dic ={self._Z_sample: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
+    return sess.run([self.eval_score,self.frechet_distance],feed_dict=feed_dic)
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""
