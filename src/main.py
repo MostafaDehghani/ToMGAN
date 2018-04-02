@@ -57,28 +57,27 @@ def setup_training(model):
     model.build_graph()  # build the graph
   # if FLAGS.restore_last_model:
   #   restore_last_model()
-  saver = tf.train.Saver(max_to_keep=3)  # keep 3 checkpoints at a time
+    saver = tf.train.Saver(max_to_keep=3)  # keep 3 checkpoints at a time
 
-  sv = tf.train.Supervisor(logdir=train_dir,
-                           is_chief=True,
-                           saver=saver,
-                           summary_op=None,
-                           save_summaries_secs=120,  # save summaries for tensorboard every 60 secs
-                           save_model_secs=120,  # checkpoint every 60 secs
-                           global_step=None
-                           )
+    sv = tf.train.Supervisor(logdir=train_dir,
+                             is_chief=True,
+                             saver=saver,
+                             summary_op=None,
+                             save_summaries_secs=120,  # save summaries for tensorboard every 60 secs
+                             save_model_secs=120,  # checkpoint every 60 secs
+                             global_step=None
+                             )
 
-  summary_writer = sv.summary_writer
-  tf.logging.info("Preparing or waiting for session...")
-  sess_context_manager = sv.prepare_or_wait_for_session(config=util.get_config())
-  tf.logging.info("Created session.")
-  try:
-    with tf.device('/device:GPU:' + FLAGS.gpu_id):
-      run_training(model, sess_context_manager, summary_writer)
-    # this is an infinite loop until interrupted
-  except KeyboardInterrupt:
-    tf.logging.info("Caught keyboard interrupt on worker. Stopping supervisor...")
-    sv.stop()
+    summary_writer = sv.summary_writer
+    tf.logging.info("Preparing or waiting for session...")
+    sess_context_manager = sv.prepare_or_wait_for_session(config=util.get_config())
+    tf.logging.info("Created session.")
+    try:
+        run_training(model, sess_context_manager, summary_writer)
+      # this is an infinite loop until interrupted
+    except KeyboardInterrupt:
+      tf.logging.info("Caught keyboard interrupt on worker. Stopping supervisor...")
+      sv.stop()
 
 
 def run_training(model, sess_context_manager, summary_writer):
