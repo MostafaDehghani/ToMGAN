@@ -23,6 +23,7 @@ class GAN_model(object):
   def __init__(self, hps, s_size=4):
     self._hps = hps
     self.s_size = s_size
+    print("data path: ",self._hps.data_path)
 
 
   def _build_GAN(self):
@@ -119,6 +120,8 @@ class GAN_model(object):
         self.score, self.distance = fid,inc_score
         tf.summary.scalar('inception_score', inc_score,collections=['All'])
         tf.summary.scalar('frechet_inception_distance', fid,collections=['All'])
+        tf.summary.image("generated_images",eval_fake_images, max_outputs=10, collections=["All"])
+
 
 
 

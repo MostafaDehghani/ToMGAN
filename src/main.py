@@ -86,11 +86,6 @@ def run_training(model, sess_context_manager, summary_writer):
       sess = tf_debug.LocalCLIDebugWrapperSession(sess)
       sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
     num_batch = 0
-    results = model.sample_input(sess)
-    print("image min:",np.min(results['input_images']))
-    print("image max:",np.max(results['input_images']))
-    util.plot(results['input_images'][:20], 0, 3)
-
     while True:  # repeats until interrupted
       if num_batch % FLAGS.logging_step == 0:
         tf.logging.info('------ number of  batches: ' + str(num_batch) + ' ------')
