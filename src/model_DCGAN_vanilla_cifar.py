@@ -36,6 +36,7 @@ class GAN_model(object):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
         images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        tf.summary.image("real_images",images, collections=["All"])
 
     with tf.variable_scope('gan'):
       # discriminator input from real data
@@ -230,6 +231,11 @@ class GAN_model(object):
   def run_eval_step(self,sess):
     return sess.run([self.score,self.distance])
 
+  def sample_input(self,sess):
+    to_return = {
+      'input_images': self._X,
+    }
+    return sess.run(to_return)
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""
