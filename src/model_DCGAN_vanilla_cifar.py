@@ -36,7 +36,7 @@ class GAN_model(object):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
         images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
-        tf.summary.image("real_images",images, collections=["All"])
+        tf.summary.image("real_images",images[0], collections=["All"])
 
     with tf.variable_scope('gan'):
       # discriminator input from real data
