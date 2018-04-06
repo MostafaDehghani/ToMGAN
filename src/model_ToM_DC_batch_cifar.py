@@ -266,7 +266,7 @@ class GAN_model(object):
   def run_eval_step(self,sess):
 
     feed_dic ={self._Z_sample: np.random.uniform(-1,1,size=[20,self._hps.gen_input_size])}
-    return sess.run([self.eval_score,self.frechet_distance],feed_dict=feed_dic)
+    return sess.run([self.score,self.distance],feed_dict=feed_dic)
 
   def sample_generator(self, sess):
     """Runs generator to generate samples"""
