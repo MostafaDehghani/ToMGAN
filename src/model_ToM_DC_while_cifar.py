@@ -79,6 +79,8 @@ class GAN_model(object):
       D_loss_real = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_real,
                                                 labels=tf.ones_like(
+
+
                                                   D_logit_real)))
       D_loss_fake = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit_fake,

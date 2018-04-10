@@ -22,15 +22,15 @@ class Discriminator(object):
       # convolution x 4
       with tf.variable_scope('conv1'):
         outputs = tf.layers.conv2d(outputs, self.depths[1], [4, 4], strides=(2, 2), padding='SAME')
-        outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training), 0.2, name='outputs')
+        outputs = leaky_relu(outputs, 0.2, name='outputs')
       with tf.variable_scope('conv2'):
         outputs = tf.layers.conv2d(outputs, self.depths[2], [4, 4], strides=(2, 2), padding='SAME')
         outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training),0.2, name='outputs')
       with tf.variable_scope('conv3'):
         outputs = tf.layers.conv2d(outputs, self.depths[3], [4, 4], strides=(2, 2), padding='SAME')
         outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training), 0.2,name='outputs')
-      with tf.variable_scope('conv4'):
-        outputs = tf.layers.conv2d(outputs, self.depths[4], [4, 4], strides=(2, 2), padding='SAME')
+      #with tf.variable_scope('conv4'):
+      #  outputs = tf.layers.conv2d(outputs, self.depths[4], [4, 4], strides=(2, 2), padding='SAME')
         outputs = leaky_relu(tf.layers.batch_normalization(outputs, training=training),0.2, name='outputs')
       with tf.variable_scope('classify'):
         batch_size = outputs.get_shape()[0].value

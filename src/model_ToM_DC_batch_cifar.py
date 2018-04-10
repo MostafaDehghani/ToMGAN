@@ -9,11 +9,12 @@ import os
 
 from tensorflow.examples.tutorials.mnist import mnist
 
-from dc_discriminator import Discriminator
-from dc_generator import Generator
+from dc_discriminator_cifar import Discriminator
+from dc_generator_cifar import Generator
 
 import sys
 sys.path.append(os.path.join('..', 'models', 'research'))
+sys.path.append(os.path.join('..', 'models', 'research','slim'))
 
 from gan.cifar import util
 from gan.cifar import data_provider
@@ -29,7 +30,7 @@ FLAGS = tf.app.flags.FLAGS
 class GAN_model(object):
   """"""
 
-  def __init__(self, hps, s_size=4):
+  def __init__(self, hps, s_size=2):
     self._hps = hps
     self.s_size = s_size
 
@@ -42,7 +43,8 @@ class GAN_model(object):
       with tf.device('/cpu:'+self._hps.gpu_id):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
-        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        #images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        tf.logging.info(images)
         tf.summary.image("real_images",images, max_outputs=10, collections=["All"])
 
 
@@ -57,15 +59,17 @@ class GAN_model(object):
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
 
-      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner',channels=3)
-      self.discriminator = Discriminator(self._hps,channels=3)
-      self.generator = Generator(self._hps,channels=3)
+      self.discriminator_inner = Discriminator(self._hps, depths=[32, 64,128], scope='discriminator_inner',channels=3)
+      self.discriminator = Discriminator(self._hps,depths=[32, 64,128], channels=3)
+      self.generator = Generator(self._hps,depths=[256,128,64],channels=3,s_size=4)
 
       # Generator
       self.G_presample = self.generator.generate(self._preZ,reuse=False)
       self.G_sample_test = self.generator.generate(self._Z_sample)
 
       # Inner Discriminator
+      tf.logging.info(self.G_presample.shape)
+      tf.logging.info(self._X.shape)
       D_in_fake_presample, D_in_logit_fake_presample = self.discriminator_inner.discriminate(self.G_presample,reuse=False)
       D_in_real, D_in_logit_real = self.discriminator_inner.discriminate(self._X)
 
