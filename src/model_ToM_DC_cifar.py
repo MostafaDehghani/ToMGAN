@@ -13,7 +13,8 @@ from dc_discriminator_cifar import Discriminator
 from dc_generator_cifar import Generator
 
 import sys
-sys.path.append(os.path.join('..', 'models', 'research', 'gan'))
+sys.path.append(os.path.join('..', 'models', 'research'))
+sys.path.append(os.path.join('..', 'models', 'research','slim'))
 
 
 from gan.cifar import util
