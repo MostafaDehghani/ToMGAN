@@ -14,7 +14,11 @@ from dc_generator_cifar import Generator
 
 import sys
 sys.path.append(os.path.join('..', 'models', 'research', 'gan'))
-from mnist import util
+
+
+from gan.cifar import util
+from gan.cifar import data_provider
+
 
 MNIST_CLASSIFIER_FROZEN_GRAPH = '../models/research/gan/mnist/data/classify_mnist_graph_def.pb'
 
