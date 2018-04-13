@@ -29,7 +29,7 @@ tf.app.flags.DEFINE_integer('batch_size', 64, 'minibatch size')
 
 tf.app.flags.DEFINE_integer('dis_output_size', 1, 'size of the input for the '
                                                   'discriminator (1)')
-
+tf.app.flags.DEFINE_integer('inner_repeat', 10, 'ToM_while loop condition')
 tf.app.flags.DEFINE_integer('dis_input_size', 784, 'size of the input for the '
                                                    'discriminator (for mnist = 784)')
 
@@ -42,6 +42,10 @@ tf.app.flags.DEFINE_integer('num_examples_per_epoch_for_train', 5000,
 # Debugging. See https://www.tensorflow.org/programmers_guide/debugger
 tf.app.flags.DEFINE_boolean('debug', False,
                             "Run in tensorflow's debug mode (watches for NaN/inf values)")
+
+tf.app.flags.DEFINE_float('learning_rate_D','0.0002','learning_rate_D')
+tf.app.flags.DEFINE_float('learning_rate_G','0.0002','learning_rate_G')
+tf.app.flags.DEFINE_float('learning_rate_D_in','0.0002','learning_rate_D_in')
 
 
 # def restore_last_model():
@@ -123,7 +127,8 @@ def main(unused_argv):
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
   hparam_list = ['batch_size', 'hidden_dim', 'dis_input_size', 'gen_input_size',
                  'dis_output_size', 'gen_output_size', 'data_path','dataset_id',
-                 'num_examples_per_epoch_for_train','loss','gpu_id']
+                 'num_examples_per_epoch_for_train','loss','gpu_id', 'inner_repeat',
+                 'learning_rate_D','learning_rate_G','learning_rate_D_in']
   hps_dict = {}
   for key, val in FLAGS.__flags.items():  # for each flag
     if key in hparam_list:  # if it's in the list
@@ -167,7 +172,7 @@ def main(unused_argv):
     elif FLAGS.model == 'ToM_while':
       from model_ToM_while import GAN_model
     elif FLAGS.model == 'ToM_DC':
-      from model_ToM_DC import GAN_model
+      from model_ToM_DC_cifar import GAN_model
     elif FLAGS.model == 'ToM_DC_batch':
       from model_ToM_DC_batch_cifar import GAN_model
     elif FLAGS.model == 'ToM_DC_while':

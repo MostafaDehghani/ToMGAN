@@ -9,8 +9,8 @@ import os
 
 from tensorflow.examples.tutorials.mnist import mnist
 
-from dc_discriminator import Discriminator
-from dc_generator import Generator
+from dc_discriminator_cifar import Discriminator
+from dc_generator_cifar import Generator
 
 import sys
 sys.path.append(os.path.join('..', 'models', 'research'))
@@ -42,7 +42,7 @@ class GAN_model(object):
       with tf.device('/cpu:'+self._hps.gpu_id):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
-        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
+        #images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
         tf.summary.image("real_images",images, max_outputs=10, collections=["All"])
 
     with tf.variable_scope('gan'):
@@ -56,11 +56,9 @@ class GAN_model(object):
       self._Z_sample = tf.placeholder(dtype=tf.float32, name='Z',
                                shape=[20, self._hps.gen_input_size])
 
-
-
-      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner',channels=3)
-      self.discriminator = Discriminator(self._hps,channels=3)
-      self.generator = Generator(self._hps,channels=3)
+      self.discriminator_inner = Discriminator(self._hps, depths=[32, 64, 128], scope='discriminator_inner', channels=3)
+      self.discriminator = Discriminator(self._hps, depths=[32, 64, 128], channels=3)
+      self.generator = Generator(self._hps, depths=[256, 128, 64], channels=3, s_size=4)
 
       # Generator
       self.G_sample = self.generator.generate(self._Z,reuse=False)
@@ -135,14 +133,14 @@ class GAN_model(object):
     #                                           100000, 0.96, staircase=True)
     learning_rate_D_in = 0.0004  # tf.train.exponential_decay(0.001, self.global_step_D,
     #                                           100000, 0.96, staircase=True)
-    self._train_op_D = tf.train.AdamOptimizer(learning_rate_D,beta1=0.5).minimize(self._D_loss,
+    self._train_op_D = tf.train.AdamOptimizer(self._hps.learning_rate_D,beta1=0.5).minimize(self._D_loss,
                                                          global_step=self.global_step_D,
                                                          var_list=self.discriminator._theta)
-    self._train_op_D_in = tf.train.AdamOptimizer(learning_rate_D_in,beta1=0.5).minimize(self._D_in_loss,
+    self._train_op_D_in = tf.train.AdamOptimizer(self._hps.learning_rate_D_in,beta1=0.5).minimize(self._D_in_loss,
                                                             global_step=self.global_step_D_in,
                                                             var_list=self.discriminator_inner._theta)
 
-    self._train_op_G = tf.train.AdamOptimizer(learning_rate_G,beta1=0.5).minimize(self._G_loss,
+    self._train_op_G = tf.train.AdamOptimizer(self._hps.learning_rate_G,beta1=0.5).minimize(self._G_loss,
                                                          global_step=self.global_step_G,
                                                          var_list=self.generator._theta)
 
@@ -218,7 +216,7 @@ class GAN_model(object):
 
     results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
     count = 1
-    while np.mean(results_G['D_in_fake']) < 0.5 and count < 10:
+    while np.mean(results_G['D_in_fake']) < 0.5 and count < self._hps.inner_repeat:
       results_G = sess.run(to_return_G,feed_dict = {self._Z: _Z, self._Z_sample:_Z_sample})
       count += 1
 
