@@ -37,7 +37,7 @@ class GAN_model(object):
 
   def _build_GAN(self):
 
-    self.initializer = tf.contrib.layers.xavier_initializer
+    self.initializer = tf.truncated_normal_initializer
 
     with tf.name_scope('inputs'):
       with tf.device('/cpu:'+self._hps.gpu_id):

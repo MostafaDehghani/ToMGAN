@@ -7,11 +7,12 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from dc_discriminator import Discriminator
-from dc_generator import Generator
+from dc_discriminator_cifar import Discriminator
+from dc_generator_cifar import Generator
 
 import sys
 sys.path.append(os.path.join('..', 'models', 'research'))
+sys.path.append(os.path.join('..', 'models', 'research','slim'))
 
 from gan.cifar import util
 from gan.cifar import data_provider
@@ -28,15 +29,15 @@ class GAN_model(object):
 
   def _build_GAN(self):
 
-    self.initializer = tf.contrib.layers.xavier_initializer
-    self.discriminator = Discriminator(self._hps,channels=3)
-    self.generator = Generator(self._hps,channels=3)
+    self.initializer = tf.truncated_normal_initializer
+
+    self.discriminator = Discriminator(self._hps, depths=[32, 64, 128], channels=3)
+    self.generator = Generator(self._hps, depths=[256, 128, 64], channels=3, s_size=4)
 
     with tf.name_scope('inputs'):
       with tf.device('/cpu:'+self._hps.gpu_id):
         images, one_hot_labels, _, _ = data_provider.provide_data(
           self._hps.batch_size, self._hps.data_path)
-        images = tf.image.resize_images(images, [self.s_size * 2 ** 4, self.s_size * 2 ** 4])
         tf.summary.image("real_images",images, max_outputs=10, collections=["All"])
 
     with tf.variable_scope('gan'):

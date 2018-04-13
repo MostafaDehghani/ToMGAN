@@ -32,7 +32,7 @@ class GAN_model(object):
 
   def _build_GAN(self):
 
-    self.initializer = tf.contrib.layers.xavier_initializer
+    self.initializer = tf.truncated_normal_initializer
 
     with tf.name_scope('inputs'):
       with tf.device('/cpu:'+self._hps.gpu_id):
@@ -50,9 +50,10 @@ class GAN_model(object):
       self._Z = tf.random_uniform([self._hps.batch_size, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
       self._Z_sample = tf.random_uniform([20, self._hps.gen_input_size], minval=-1.0, maxval=1.0)
 
-      self.discriminator_inner = Discriminator(self._hps, scope='discriminator_inner')
-      self.discriminator = Discriminator(self._hps)
-      self.generator = Generator(self._hps)
+      self.discriminator_inner = Discriminator(self._hps, depths=[32, 64, 128], scope='discriminator_inner', channels=3)
+      self.discriminator = Discriminator(self._hps, depths=[32, 64, 128], channels=3)
+      self.generator = Generator(self._hps, depths=[256, 128, 64], channels=3, s_size=4)
+
 
       # Generator
       self.G_sample = self.generator.generate(self._Z,reuse=False)
