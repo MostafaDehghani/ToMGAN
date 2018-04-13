@@ -48,7 +48,7 @@ class GAN_model(object):
 
     with tf.variable_scope('gan'):
       # discriminator input from real data
-      self._X = self.inputs(self._hps.batch_size, self.s_size)
+      self._X = images# self.inputs(self._hps.batch_size, self.s_size)
       # tf.placeholder(dtype=tf.float32, name='X',
       #                       shape=[None, self._hps.dis_input_size])
       # noise vector (generator input)
